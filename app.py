@@ -3,17 +3,50 @@ from services.gemini_service import ask_gemini
 
 st.set_page_config(
     page_title="Nova",
-    page_icon=":robot_face:",
+    page_icon="🤖",
 )
 
-st.title("Nova: Your AI Assistant")
-st.write("Welcome to Nova, your personal AI assistant. How can I help you today?")
 
-question=st.text_input("Ask me anything")
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-if st.button("Ask Nova"):
-    if question.strip():
-        answer=ask_gemini(question)
-        st.success(answer)
-    else:
-        st.error("Please enter a question before asking Nova.")
+
+st.title("🤖 Nova")
+st.write("Welcome to Nova! Ask me anything.")
+
+
+for message in st.session_state.messages:
+
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
+
+
+question = st.chat_input("Ask Nova anything...")
+
+if question:
+
+    
+    st.session_state.messages.append(
+        {
+            "role": "user",
+            "content": question
+        }
+    )
+
+    
+    with st.chat_message("user"):
+        st.write(question)
+
+   
+    answer = ask_gemini(question)
+
+    st.session_state.messages.append(
+        {
+            "role": "assistant",
+            "content": answer
+        }
+    )
+
+    
+    with st.chat_message("assistant"):
+        st.write(answer)
