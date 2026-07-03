@@ -1,5 +1,6 @@
 import streamlit as st
-from services.gemini_service import ask_gemini
+from services.gemini_service import ask_gemini, transcribe_audio
+from services.speech_to_text import record_audio
 
 # -----------------------------
 # Page Configuration
@@ -22,7 +23,7 @@ if "messages" not in st.session_state:
 with st.sidebar:
     st.title("⚙️ Settings")
     st.write("**Nova AI Assistant**")
-    st.write("Version 0.3")
+    st.write("Version 0.4")
 
     st.divider()
 
@@ -50,7 +51,9 @@ I can help you with:
 - 🌍 General Knowledge
 - 💡 Brainstorming Ideas
 
-Type your first message below!
+Choose one of the options below:
+- ⌨️ Type a message
+- 🎤 Click Speak
 """)
 
 # -----------------------------
@@ -61,25 +64,54 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # -----------------------------
-# Chat Input
+# Input Section
 # -----------------------------
-user_prompt = st.chat_input("Ask Nova anything...")
+voice_button = st.button("🎤 Speak")
 
+user_prompt = None
+
+# Text Input
+text_input = st.chat_input("Ask Nova anything...")
+
+if text_input:
+    user_prompt = text_input
+
+# Voice Input
+elif voice_button:
+
+    with st.spinner("🎤 Recording..."):
+        audio_path = record_audio()
+
+    if audio_path:
+
+        with st.spinner("📝 Transcribing..."):
+            user_prompt = transcribe_audio(audio_path)
+
+        if user_prompt:
+            st.success(f"🎤 You said: {user_prompt}")
+        else:
+            st.error("❌ I couldn't understand the audio.")
+    else:
+        st.error("❌ Recording failed.")
+
+# -----------------------------
+# Generate AI Response
+# -----------------------------
 if user_prompt:
 
     # Save user message
     st.session_state.messages.append(
         {
             "role": "user",
-            "content": user_prompt,
+            "content": user_prompt
         }
     )
 
-    # Display user message immediately
+    # Display user message
     with st.chat_message("user"):
         st.markdown(user_prompt)
 
-    # Get AI response
+    # Generate response
     with st.spinner("🤖 Nova is thinking..."):
         assistant_response = ask_gemini(user_prompt)
 
@@ -87,7 +119,7 @@ if user_prompt:
     st.session_state.messages.append(
         {
             "role": "assistant",
-            "content": assistant_response,
+            "content": assistant_response
         }
     )
 
