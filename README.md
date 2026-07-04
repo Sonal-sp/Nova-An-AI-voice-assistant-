@@ -1,10 +1,31 @@
 NOVA:AN AI VOICE ASSISTANT 
 ** CURRENTLY IN DEVELOPMENT PHASE 
-SPRINT 1: BASIC CHATBOT
-SPRINT 2: IMPLEMENTATION OF CHAT HISTORY
-SPRINT 3:IMPLMENTED SESSION STATE , SIDEBAR , BETTER UI 
-SPRINT 4:SPEECH-TO-TEXT  INTEGRATION
-SPRINT 5:NOVA AI RESPONDS WITH ITS OWN VOICE.
+✅ Sprint 1 — Foundation
+Project structure
+Virtual environment
+Streamlit
+Gemini API
+GitHub repository
+✅ Sprint 2 — Chat UI
+Chat interface
+Session state
+Message history
+Sidebar
+Clear chat
+✅ Sprint 3 — Better UX
+Chat bubbles
+Welcome screen
+Loading spinners
+Cleaner UI
+✅ Sprint 4 — Voice Input
+Audio recording
+Speech-to-text
+Voice messages
+Gemini transcription
+✅ Sprint 5 — Voice Output
+Edge TTS
+Automatic playback
+AI speaks back
 ### PRIMARY FEATURES OF NOVA-AN AI VOICE ASSISTANT:
 ## Features
 

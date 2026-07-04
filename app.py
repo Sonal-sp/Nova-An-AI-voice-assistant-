@@ -1,6 +1,8 @@
 import streamlit as st
 from services.gemini_service import ask_gemini, transcribe_audio
 from services.speech_to_text import record_audio
+from services.text_to_speech import text_to_speech
+import asyncio
 
 # -----------------------------
 # Page Configuration
@@ -126,3 +128,12 @@ if user_prompt:
     # Display assistant response
     with st.chat_message("assistant"):
         st.markdown(assistant_response)
+        audio_file = asyncio.run(
+            text_to_speech(assistant_response)
+            )
+        try:
+            asyncio.run(
+                text_to_speech(assistant_response)
+                )
+        except Exception as e:
+            st.warning(f"🔊 Couldn't play audio: {e}")
