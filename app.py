@@ -1,8 +1,15 @@
 import streamlit as st
-from services.gemini_service import ask_gemini, transcribe_audio
+from services.assistant import get_assistant_response
 from services.speech_to_text import record_audio
 from services.text_to_speech import text_to_speech
 import asyncio
+from services.memory import (
+    initialize_memory,
+    get_messages,
+    add_message,
+    clear_messages,
+)
+
 
 # -----------------------------
 # Page Configuration
@@ -16,8 +23,7 @@ st.set_page_config(
 # -----------------------------
 # Session State
 # -----------------------------
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+initialize_memory()
 
 # -----------------------------
 # Sidebar
@@ -30,7 +36,7 @@ with st.sidebar:
     st.divider()
 
     if st.button("🗑️ Clear Chat"):
-        st.session_state.messages = []
+        clear_messages()
         st.rerun()
 
 # -----------------------------
@@ -61,7 +67,7 @@ Choose one of the options below:
 # -----------------------------
 # Display Chat History
 # -----------------------------
-for message in st.session_state.messages:
+for message in get_messages():
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
@@ -102,12 +108,7 @@ elif voice_button:
 if user_prompt:
 
     # Save user message
-    st.session_state.messages.append(
-        {
-            "role": "user",
-            "content": user_prompt
-        }
-    )
+    add_message("user", user_prompt)
 
     # Display user message
     with st.chat_message("user"):
@@ -115,15 +116,12 @@ if user_prompt:
 
     # Generate response
     with st.spinner("🤖 Nova is thinking..."):
-        assistant_response = ask_gemini(user_prompt)
+        assistant_response = get_assistant_response(
+            get_messages()
+        )
 
     # Save assistant response
-    st.session_state.messages.append(
-        {
-            "role": "assistant",
-            "content": assistant_response
-        }
-    )
+    add_message("assistant", assistant_response)
 
     # Display assistant response
     with st.chat_message("assistant"):

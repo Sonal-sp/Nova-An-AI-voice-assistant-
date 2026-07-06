@@ -34,6 +34,14 @@ Edge TTS
 Automatic playback
 AI speaks back
 
+✅ Sprint 6 Deliverables
+Assistant Architecture
+Improved better Conversation Memory
+Memory Management
+Limited the conversation to Context Window
+Improved Code Quality
+
+
 ### PRIMARY FEATURES OF NOVA-AN AI VOICE ASSISTANT:
 ## Features
 

@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 from google import genai
 import traceback
+from config import GEMINI_MODEL, SYSTEM_PROMPT
 load_dotenv()
 
 client = genai.Client(
@@ -9,11 +10,11 @@ client = genai.Client(
 )
 
 
-def ask_gemini(prompt: str):
+def ask_gemini(conversation):
     try:
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
+            model=GEMINI_MODEL,
+            contents=conversation,
         )
 
         return response.text
