@@ -9,8 +9,18 @@ from services.memory import (
     add_message,
     clear_messages,
 )
+from services.document_service import (
+    read_pdf,
+    split_text_into_chunks,
+    find_relevant_chunk,
+)
+from ui.welcome import show_welcome
 
+show_welcome()
 
+from ui.chat import display_chat
+
+display_chat()
 # -----------------------------
 # Page Configuration
 # -----------------------------
@@ -35,9 +45,35 @@ with st.sidebar:
 
     st.divider()
 
-    if st.button("🗑️ Clear Chat"):
-        clear_messages()
-        st.rerun()
+    uploaded_file = st.file_uploader(
+    "📄 Upload a PDF",
+    type=["pdf"]
+)
+    st.divider()
+
+response_mode = st.radio(
+    "🔊 Response Mode",
+    [
+        "Text Only",
+        "Voice Only",
+        "Text + Voice"
+    ]
+)
+if uploaded_file:
+        pdf_text = read_pdf(uploaded_file)
+        pdf_chunks = split_text_into_chunks(pdf_text)
+        st.session_state.pdf_text = pdf_text
+        st.session_state.pdf_chunks = pdf_chunks
+        st.success("✅ PDF uploaded successfully!")
+        st.write(f"Characters extracted: {len(pdf_text)}")
+        st.write(f"Chunks: {len(pdf_chunks)}")
+        if "pdf_text" in st.session_state:
+            st.info(
+        f"📚 PDF Loaded ({len(st.session_state.pdf_text)} characters)"
+    )
+        if st.button("🗑️ Clear Chat"):
+            clear_messages()
+            st.rerun()
 
 # -----------------------------
 # Main Header
@@ -117,7 +153,8 @@ if user_prompt:
     # Generate response
     with st.spinner("🤖 Nova is thinking..."):
         assistant_response = get_assistant_response(
-            get_messages()
+            get_messages(),
+            pdf_text=st.session_state.get("pdf_text")
         )
 
     # Save assistant response
@@ -125,13 +162,13 @@ if user_prompt:
 
     # Display assistant response
     with st.chat_message("assistant"):
-        st.markdown(assistant_response)
-        audio_file = asyncio.run(
-            text_to_speech(assistant_response)
-            )
-        try:
-            asyncio.run(
+        if response_mode != "Voice Only":
+            st.markdown(assistant_response)
+
+        if response_mode != "Text Only":
+            try:
+                asyncio.run(
                 text_to_speech(assistant_response)
-                )
-        except Exception as e:
-            st.warning(f"🔊 Couldn't play audio: {e}")
+            )
+            except Exception as e:
+                st.warning(f"🔊 Couldn't play audio: {e}")

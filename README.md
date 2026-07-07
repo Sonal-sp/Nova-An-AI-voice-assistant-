@@ -41,6 +41,17 @@ Memory Management
 Limited the conversation to Context Window
 Improved Code Quality
 
+✅ Sprint 7 (BASIC MVP READY , OTHER DEVELOPMENTS WILL BE IN FUTURE.)
+💬 Multi-turn Chat        
+🧠 Conversation Memory    
+🎤 Speech to Text         
+🔊 Text to Speech         
+📄 PDF Upload             
+📖 PDF Parsing            
+✂️ Document Chunking      
+🔍 Retrieval Engine       
+🤖 Context-aware Answers  
+
 
 ### PRIMARY FEATURES OF NOVA-AN AI VOICE ASSISTANT:
 ## Features
