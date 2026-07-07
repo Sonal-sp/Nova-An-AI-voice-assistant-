@@ -52,4 +52,35 @@ Rules:
         traceback.print_exc()
         raise
 
+def handle_gemini_error(e):
 
+    message = str(e)
+
+    if "429" in message:
+
+        return (
+            "⚠️ Nova has reached the Gemini API quota.\n\n"
+            "Please wait a minute and try again."
+        )
+
+    if "401" in message:
+
+        return (
+            "⚠️ Invalid Gemini API Key."
+        )
+
+    if "403" in message:
+
+        return (
+            "⚠️ Permission denied."
+        )
+
+    if "timeout" in message.lower():
+
+        return (
+            "🌐 Network timeout."
+        )
+
+    return (
+        "⚠️ Something went wrong."
+    )

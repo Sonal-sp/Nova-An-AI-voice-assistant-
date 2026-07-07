@@ -2,13 +2,14 @@ import streamlit as st
 
 from services.memory import initialize_memory
 from services.chat_service import process_chat
-
+from ui.response import display_response
 from ui.sidebar import show_sidebar
 from ui.welcome import show_welcome
 from ui.chat import display_chat
 from ui.input import get_user_input
-from ui.response import display_assistant_response
-
+from utils.constants import (
+    THINKING_MESSAGE,
+)
 # -----------------------------
 # Page Configuration
 # -----------------------------
@@ -59,11 +60,11 @@ if user_prompt:
         st.markdown(user_prompt)
 
     # Generate assistant response
-    with st.spinner("🤖 Nova is thinking..."):
+    with st.spinner(THINKING_MESSAGE):
         assistant_response= process_chat(user_prompt)
 
     # Display assistant response
-    display_assistant_response(
+    display_response(
         assistant_response,
         response_mode,
     )

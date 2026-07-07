@@ -1,7 +1,6 @@
 from config import SYSTEM_PROMPT
 from services.gemini_service import ask_gemini
-
-MAX_CONTEXT_MESSAGES = 20
+from utils.constants import MAX_CONTEXT_MESSAGES
 
 
 def get_assistant_response(

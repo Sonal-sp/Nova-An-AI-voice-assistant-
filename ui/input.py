@@ -1,8 +1,13 @@
 import streamlit as st
-
+from utils.loading import loading
 from services.speech_to_text import record_audio
 from services.gemini_service import transcribe_audio
-
+from utils.constants import (
+    THINKING_MESSAGE,
+    PDF_LOADING_MESSAGE,
+    SPEAKING_MESSAGE,
+    TRANSCRIBE_MESSAGE,
+)
 
 def get_user_input():
 
@@ -11,18 +16,18 @@ def get_user_input():
     text_input = st.chat_input("Ask Nova anything...")
 
     if text_input:
-
-        return text_input
+        with loading(THINKING_MESSAGE):
+            return text_input
 
     if voice_button:
 
-        with st.spinner("🎤 Recording..."):
+        with loading("🎤 Recording..."):
 
             audio_path = record_audio()
 
         if audio_path:
 
-            with st.spinner("📝 Transcribing..."):
+            with loading(TRANSCRIBE_MESSAGE):
 
                 transcript = transcribe_audio(audio_path)
 
