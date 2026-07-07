@@ -1,4 +1,5 @@
 import asyncio
+
 import streamlit as st
 
 from services.text_to_speech import text_to_speech
@@ -12,6 +13,7 @@ def display_assistant_response(
     with st.chat_message("assistant"):
 
         if response_mode != "Voice Only":
+
             st.markdown(response)
 
         if response_mode != "Text Only":
