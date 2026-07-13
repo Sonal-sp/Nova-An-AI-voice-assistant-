@@ -1,3 +1,5 @@
+import streamlit as st
+
 from services.memory import (
     add_message,
     get_messages,
@@ -17,62 +19,109 @@ from services.intent_detector import (
 
 from services.web_search import (
     search_web,
+    format_search_results,
 )
 
-import streamlit as st
+from services.url_detector import (
+    extract_url,
+)
+
+from services.url_service import (
+    extract_text_from_url,
+)
 
 
 def process_chat(user_prompt):
+    """
+    Main chat pipeline.
 
-    # Save user message
+    Flow:
+    User
+      ↓
+    Memory
+      ↓
+    PDF Context
+      ↓
+    URL Context
+      ↓
+    Web Search Context
+      ↓
+    Gemini
+      ↓
+    Save Response
+    """
+
+    # =============================
+    # Save User Message
+    # =============================
     add_message(
         "user",
         user_prompt,
     )
 
-    # -----------------------------
+    # =============================
     # PDF Context
-    # -----------------------------
+    # =============================
     document_context = None
 
-    if "pdf_chunks" in st.session_state:
+    pdf_chunks = st.session_state.get(
+        "pdf_chunks",
+        [],
+    )
+
+    if pdf_chunks:
 
         document_context = find_relevant_chunk(
             user_prompt,
-            st.session_state.pdf_chunks,
+            pdf_chunks,
         )
 
-    # -----------------------------
-    # Web Context
-    # -----------------------------
+    # =============================
+    # URL Context
+    # =============================
+    url_context = None
+
+    url = extract_url(user_prompt)
+
+    if url:
+
+        webpage = extract_text_from_url(url)
+
+        if webpage:
+
+            # Limit size sent to Gemini
+            url_context = webpage[:12000]
+
+    # =============================
+    # Web Search Context
+    # =============================
     web_context = None
 
     if should_search_web(user_prompt):
 
-        search_results = search_web(user_prompt)
+        search_results = search_web(
+            user_prompt,
+        )
 
         if search_results:
 
-            web_context = ""
+            web_context = format_search_results(
+                search_results,
+            )
 
-            for result in search_results:
-
-                web_context += (
-                    f"Title: {result['title']}\n"
-                    f"Summary: {result['body']}\n"
-                    f"URL: {result['url']}\n\n"
-                )
-
-    # -----------------------------
-    # Generate Response
-    # -----------------------------
+    # =============================
+    # Generate Assistant Response
+    # =============================
     assistant_response = get_assistant_response(
         messages=get_messages(),
         document_context=document_context,
         web_context=web_context,
+        url_context=url_context,
     )
 
-    # Save assistant response
+    # =============================
+    # Save Assistant Response
+    # =============================
     add_message(
         "assistant",
         assistant_response,

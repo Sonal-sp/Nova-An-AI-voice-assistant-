@@ -2,35 +2,30 @@ from ddgs import DDGS
 
 
 def search_web(query, max_results=5):
-    """
-    Search the web using DuckDuckGo.
-    Returns formatted search results.
-    """
 
-    try:
-        results = []
+    with DDGS() as ddgs:
 
-        with DDGS() as ddgs:
-
-            search_results = ddgs.text(
+        results = list(
+            ddgs.text(
                 query,
                 max_results=max_results,
             )
+        )
 
-            for result in search_results:
+    return results
 
-                results.append(
-                    {
-                        "title": result.get("title", ""),
-                        "body": result.get("body", ""),
-                        "url": result.get("href", ""),
-                    }
-                )
 
-        return results
+def format_search_results(results):
 
-    except Exception as e:
+    context = ""
 
-        print("Web Search Error:", e)
+    for i, result in enumerate(results, start=1):
 
-        return []
+        context += (
+            f"Search Result {i}\n"
+            f"Title: {result['title']}\n"
+            f"Summary: {result['body']}\n"
+            f"URL: {result['url']}\n\n"
+        )
+
+    return context

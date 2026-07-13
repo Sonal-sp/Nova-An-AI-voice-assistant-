@@ -7,6 +7,7 @@ def get_assistant_response(
     messages,
     document_context=None,
     web_context=None,
+    url_context=None
 ):
 
     conversation = [SYSTEM_PROMPT]
@@ -46,7 +47,19 @@ WEB SEARCH RESULTS:
 {web_context}
 """
     )
+        if url_context:
 
+            conversation.append(
+        f"""
+The user provided a webpage.
+
+Read the following webpage content and answer the user's request.
+
+WEBPAGE CONTENT:
+
+{url_context}
+"""
+    )
     # -----------------------------
     # Conversation History
     # -----------------------------
