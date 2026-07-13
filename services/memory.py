@@ -2,10 +2,15 @@ import streamlit as st
 
 
 def initialize_memory():
-    """Initialize chat history."""
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
+
+    if "pdf_text" not in st.session_state:
+        st.session_state.pdf_text = ""
+
+    if "pdf_chunks" not in st.session_state:
+        st.session_state.pdf_chunks = []
 
 
 def get_messages():
