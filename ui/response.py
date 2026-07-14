@@ -2,7 +2,7 @@ import asyncio
 import streamlit as st
 
 from services.text_to_speech import text_to_speech
-
+from ui.response_card import display_response_card
 from utils.code_formatter import parse_response
 from utils.loading import loading
 
@@ -15,9 +15,14 @@ from ui.metadata import display_metadata
 
 
 def display_response(
-    result: dict,
-    response_mode: str,
+    result,
+    response_mode,
 ):
+
+    display_response_card(
+        result,
+        response_mode,
+    )
 
     response = result["text"]
     metadata = result["metadata"]
