@@ -10,6 +10,7 @@ from ui.input import get_user_input
 from utils.constants import (
     THINKING_MESSAGE,
 )
+
 # -----------------------------
 # Page Configuration
 # -----------------------------
@@ -55,16 +56,17 @@ user_prompt = get_user_input()
 # -----------------------------
 if user_prompt:
 
-    # Show user's latest message immediately
+    # Show user's latest message
     with st.chat_message("user"):
         st.markdown(user_prompt)
 
     # Generate assistant response
     with st.spinner(THINKING_MESSAGE):
-        assistant_response= process_chat(user_prompt)
+        result = process_chat(user_prompt)
 
     # Display assistant response
-    display_response(
-        assistant_response,
-        response_mode,
-    )
+    if result:
+        display_response(
+            result=result,
+            response_mode=response_mode,
+        )

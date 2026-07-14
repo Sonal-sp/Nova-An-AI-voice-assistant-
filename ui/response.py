@@ -2,19 +2,25 @@ import asyncio
 import streamlit as st
 
 from services.text_to_speech import text_to_speech
+
 from utils.code_formatter import parse_response
+from utils.loading import loading
+
 from utils.constants import (
     TEXT_ONLY,
-    VOICE_ONLY,
+    SPEAKING_MESSAGE,
 )
-from utils.loading import loading
-from utils.constants import SPEAKING_MESSAGE
+
+from ui.metadata import display_metadata
 
 
 def display_response(
-    response: str,
+    result: dict,
     response_mode: str,
 ):
+
+    response = result["text"]
+    metadata = result["metadata"]
 
     with st.chat_message("assistant"):
 
@@ -34,6 +40,7 @@ def display_response(
                     block["content"],
                     language=block["language"],
                 )
+        display_metadata(metadata)
 
         if response_mode != TEXT_ONLY:
 

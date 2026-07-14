@@ -19,13 +19,25 @@ def format_search_results(results):
 
     context = ""
 
-    for i, result in enumerate(results, start=1):
+    for result in results:
+
+        print("=" * 80)
+        print(type(result))
+        print(result)
+
+        # Convert to a plain dict if needed
+        result = dict(result)
+
+        print(result.keys())
+
+        title = result.get("title", "No title")
+        body = result.get("body", "No description")
+        url = result.get("href", "No URL")
 
         context += (
-            f"Search Result {i}\n"
-            f"Title: {result['title']}\n"
-            f"Summary: {result['body']}\n"
-            f"URL: {result['url']}\n\n"
+            f"Title: {title}\n"
+            f"Summary: {body}\n"
+            f"URL: {url}\n\n"
         )
 
     return context

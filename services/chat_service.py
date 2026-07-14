@@ -1,3 +1,4 @@
+import time
 import streamlit as st
 
 from services.memory import (
@@ -32,55 +33,32 @@ from services.url_service import (
 
 
 def process_chat(user_prompt):
-    """
-    Main chat pipeline.
+    if not user_prompt:
+        return None
+    start_time = time.perf_counter()
 
-    Flow:
-    User
-      ↓
-    Memory
-      ↓
-    PDF Context
-      ↓
-    URL Context
-      ↓
-    Web Search Context
-      ↓
-    Gemini
-      ↓
-    Save Response
-    """
-
-    # =============================
-    # Save User Message
-    # =============================
     add_message(
         "user",
         user_prompt,
     )
 
-    # =============================
-    # PDF Context
-    # =============================
     document_context = None
+    web_context = None
+    url_context = None
 
-    pdf_chunks = st.session_state.get(
-        "pdf_chunks",
-        [],
-    )
-
-    if pdf_chunks:
+    # -----------------------------
+    # PDF Context
+    # -----------------------------
+    if st.session_state.get("pdf_chunks"):
 
         document_context = find_relevant_chunk(
             user_prompt,
-            pdf_chunks,
+            st.session_state["pdf_chunks"],
         )
 
-    # =============================
+    # -----------------------------
     # URL Context
-    # =============================
-    url_context = None
-
+    # -----------------------------
     url = extract_url(user_prompt)
 
     if url:
@@ -89,29 +67,19 @@ def process_chat(user_prompt):
 
         if webpage:
 
-            # Limit size sent to Gemini
             url_context = webpage[:12000]
 
-    # =============================
-    # Web Search Context
-    # =============================
-    web_context = None
-
+    # -----------------------------
+    # Web Search
+    # -----------------------------
     if should_search_web(user_prompt):
 
-        search_results = search_web(
-            user_prompt,
-        )
+        results = search_web(user_prompt)
 
-        if search_results:
+        if results:
 
-            web_context = format_search_results(
-                search_results,
-            )
+            web_context = format_search_results(results)
 
-    # =============================
-    # Generate Assistant Response
-    # =============================
     assistant_response = get_assistant_response(
         messages=get_messages(),
         document_context=document_context,
@@ -119,12 +87,20 @@ def process_chat(user_prompt):
         url_context=url_context,
     )
 
-    # =============================
-    # Save Assistant Response
-    # =============================
     add_message(
         "assistant",
         assistant_response,
     )
 
-    return assistant_response
+    elapsed = time.perf_counter() - start_time
+
+    return {
+    "text": assistant_response,
+    "metadata": {
+        "response_time": round(elapsed, 2),
+        "model": "Gemini",
+        "used_pdf": document_context is not None,
+        "used_web": web_context is not None,
+        "used_url": url_context is not None,
+    }
+}
