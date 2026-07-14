@@ -1,33 +1,14 @@
 import asyncio
-import time
-
 import streamlit as st
 
 from services.text_to_speech import text_to_speech
+from utils.code_formatter import parse_response
 from utils.constants import (
     TEXT_ONLY,
     VOICE_ONLY,
-    STREAM_DELAY,
 )
 from utils.loading import loading
 from utils.constants import SPEAKING_MESSAGE
-
-
-def stream_response(text: str):
-
-    placeholder = st.empty()
-
-    current = ""
-
-    for word in text.split():
-
-        current += word + " "
-
-        placeholder.markdown(current)
-
-        time.sleep(STREAM_DELAY)
-
-    return current
 
 
 def display_response(
@@ -37,9 +18,22 @@ def display_response(
 
     with st.chat_message("assistant"):
 
-        if response_mode != VOICE_ONLY:
+        blocks = parse_response(response)
 
-            stream_response(response)
+        for block in blocks:
+
+            if block["type"] == "markdown":
+
+                st.markdown(
+                    block["content"]
+                )
+
+            elif block["type"] == "code":
+
+                st.code(
+                    block["content"],
+                    language=block["language"],
+                )
 
         if response_mode != TEXT_ONLY:
 
