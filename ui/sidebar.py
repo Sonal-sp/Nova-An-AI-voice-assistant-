@@ -2,8 +2,8 @@ import streamlit as st
 
 from services.memory import clear_messages
 from services.document_service import (
-    read_pdf,
-    split_text_into_chunks,
+    create_document,
+    get_document_statistics,
 )
 
 from utils.helpers import chat_to_text
@@ -17,21 +17,24 @@ from utils.constants import (
 )
 
 
+# ==========================================================
+# Sidebar
+# ==========================================================
 def show_sidebar():
 
     with st.sidebar:
 
-        # =============================
+        # ==================================================
         # Header
-        # =============================
+        # ==================================================
         st.title("🤖 Nova")
         st.caption("Your Personal AI Assistant")
 
         st.divider()
 
-        # =============================
+        # ==================================================
         # Response Mode
-        # =============================
+        # ==================================================
         response_mode = st.radio(
             "🔊 Response Mode",
             [
@@ -43,77 +46,134 @@ def show_sidebar():
 
         st.divider()
 
-        # =============================
-        # PDF Upload
-        # =============================
-        uploaded_file = st.file_uploader(
-            "📄 Upload PDF",
+        # ==================================================
+        # Initialize Document Library
+        # ==================================================
+        if "documents" not in st.session_state:
+
+            st.session_state.documents = []
+
+        # ==================================================
+        # Multi PDF Upload
+        # ==================================================
+        uploaded_files = st.file_uploader(
+            "📄 Upload PDFs",
             type=["pdf"],
+            accept_multiple_files=True,
         )
 
-        if uploaded_file:
+        if uploaded_files:
 
-            with loading(PDF_LOADING_MESSAGE):
+            existing_files = {
 
-                pdf_text = read_pdf(uploaded_file)
+                doc["filename"]
 
-                pdf_chunks = split_text_into_chunks(pdf_text)
+                for doc in st.session_state.documents
 
-            st.session_state["pdf_text"] = pdf_text
-            st.session_state["pdf_chunks"] = pdf_chunks
+            }
 
-        # =============================
-        # PDF Status
-        # =============================
-        st.subheader("📄 Document")
+            for file in uploaded_files:
 
-        pdf_chunks = st.session_state.get("pdf_chunks", [])
+                # Avoid duplicates
+                if file.name in existing_files:
 
-        if pdf_chunks:
+                    continue
 
-            st.success("✅ PDF Loaded")
+                with loading(
+                    f"{PDF_LOADING_MESSAGE} ({file.name})"
+                ):
 
-            st.caption(
-                f"{len(pdf_chunks)} chunks available"
-            )
+                    document = create_document(file)
+
+                    st.session_state.documents.append(
+                        document
+                    )
+
+        st.divider()
+
+        # ==================================================
+        # Uploaded Documents
+        # ==================================================
+        st.subheader("📂 Uploaded Documents")
+
+        documents = st.session_state.documents
+
+        if documents:
+
+            for index, document in enumerate(documents):
+
+                with st.expander(
+                    f"📄 {document['filename']}",
+                    expanded=False,
+                ):
+
+                    st.write(
+                        f"Pages : {document['pages']}"
+                    )
+
+                    st.write(
+                        f"Chunks : {document['chunk_count']}"
+                    )
+
+                    if st.button(
+                        "🗑 Remove",
+                        key=f"remove_doc_{index}",
+                        use_container_width=True,
+                    ):
+
+                        st.session_state.documents.pop(index)
+
+                        st.rerun()
 
         else:
 
-            st.info("No PDF uploaded")
+            st.info("No PDF uploaded.")
 
         st.divider()
 
-        # =============================
+        # ==================================================
+        # Document Statistics
+        # ==================================================
+        st.subheader("📊 Documents")
+
+        stats = get_document_statistics(
+            documents
+        )
+
+        st.write(f"Files : {stats['files']}")
+        st.write(f"Pages : {stats['pages']}")
+        st.write(f"Chunks : {stats['chunks']}")
+
+        st.divider()
+
+        # ==================================================
         # Session Statistics
-        # =============================
-        st.subheader("📊 Session")
+        # ==================================================
+        st.subheader("💬 Session")
 
         st.write(
-            f"Messages: {len(st.session_state.get('messages', []))}"
+            f"Messages : {len(st.session_state.get('messages', []))}"
         )
 
         st.write(
-            f"Voice Mode: {response_mode}"
+            f"Voice Mode : {response_mode}"
         )
-
-        if pdf_chunks:
-
-            st.write(
-                f"PDF Chunks: {len(pdf_chunks)}"
-            )
 
         st.divider()
 
-        # =============================
+        # ==================================================
         # Export Chat
-        # =============================
+        # ==================================================
         chat_text = chat_to_text(
-            st.session_state.get("messages", [])
+            st.session_state.get(
+                "messages",
+                [],
+            )
         )
 
         st.download_button(
-            label="📥 Export Chat",
-            data=chat_text,
+            "📥 Export Chat",
+            chat_text,
             file_name="nova_chat.txt",
             mime="text/plain",
             use_container_width=True,
@@ -121,11 +181,11 @@ def show_sidebar():
 
         st.divider()
 
-        # =============================
+        # ==================================================
         # Clear Chat
-        # =============================
+        # ==================================================
         if st.button(
-            "🗑️ Clear Chat",
+            "🗑 Clear Chat",
             use_container_width=True,
         ):
 

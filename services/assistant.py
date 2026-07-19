@@ -13,7 +13,20 @@ def get_assistant_response(
     Builds the prompt sent to Gemini.
     """
 
-    conversation = [SYSTEM_PROMPT]
+    conversation = [
+    SYSTEM_PROMPT,
+    """
+You are Nova.
+
+Priority for answering:
+1. If PDF context answers the question, use the PDF.
+2. Otherwise use webpage content if available.
+3. Otherwise use web search results.
+4. Otherwise use your own knowledge.
+
+Always give the most accurate answer possible.
+"""
+]
 
     # ==========================================================
     # PDF Context

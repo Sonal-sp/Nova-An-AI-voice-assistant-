@@ -13,7 +13,7 @@ from services.assistant import (
 )
 
 from services.document_service import (
-    find_relevant_chunk,
+    find_relevant_document_chunk,
 )
 
 from services.intent_detector import (
@@ -34,7 +34,9 @@ from services.url_service import (
 )
 
 
+# ==========================================================
 # Main Chat Pipeline
+# ==========================================================
 def process_chat(
     user_prompt,
     save_user=True,
@@ -45,8 +47,9 @@ def process_chat(
 
     start_time = time.perf_counter()
 
-    
+    # ------------------------------------------------------
     # Save User Message
+    # ------------------------------------------------------
     if save_user:
 
         add_message(
@@ -55,25 +58,35 @@ def process_chat(
         )
 
     document_context = None
+    document_source = None
+
     web_context = None
     url_context = None
 
-   
-    # PDF RAG
-    pdf_chunks = st.session_state.get(
-        "pdf_chunks",
+    # ------------------------------------------------------
+    # Multi-Document RAG
+    # ------------------------------------------------------
+    documents = st.session_state.get(
+        "documents",
         [],
     )
 
-    if pdf_chunks:
+    if documents:
 
-        document_context = find_relevant_chunk(
+        result = find_relevant_document_chunk(
             user_prompt,
-            pdf_chunks,
+            documents,
         )
 
-    
+        if result["document"]:
+
+            document_context = result["chunk"]
+
+            document_source = result["document"]["filename"]
+
+    # ------------------------------------------------------
     # URL Reader
+    # ------------------------------------------------------
     url = extract_url(user_prompt)
 
     if url:
@@ -90,8 +103,9 @@ def process_chat(
 
             url_context = None
 
-   
+    # ------------------------------------------------------
     # Web Search
+    # ------------------------------------------------------
     if should_search_web(user_prompt):
 
         try:
@@ -108,8 +122,9 @@ def process_chat(
 
             web_context = None
 
-    
+    # ------------------------------------------------------
     # Gemini Response
+    # ------------------------------------------------------
     assistant_response = get_assistant_response(
         messages=get_messages(),
         document_context=document_context,
@@ -117,8 +132,9 @@ def process_chat(
         url_context=url_context,
     )
 
-   
+    # ------------------------------------------------------
     # Save Assistant Message
+    # ------------------------------------------------------
     add_message(
         "assistant",
         assistant_response,
@@ -129,8 +145,9 @@ def process_chat(
         2,
     )
 
-   
-    # Return Response
+    # ------------------------------------------------------
+    # Return Result
+    # ------------------------------------------------------
     return {
 
         "text": assistant_response,
@@ -141,18 +158,22 @@ def process_chat(
 
             "model": "Gemini",
 
-            "used_pdf": bool(document_context),
+            "used_pdf": document_context is not None,
 
-            "used_web": bool(web_context),
+            "used_web": web_context is not None,
 
-            "used_url": bool(url_context),
+            "used_url": url_context is not None,
+
+            "document": document_source,
 
         },
 
     }
 
 
-# Regenerate Last Response
+# ==========================================================
+# Regenerate Response
+# ==========================================================
 def regenerate_response():
 
     user_prompt = get_last_user_message()
@@ -161,7 +182,6 @@ def regenerate_response():
 
         return None
 
-    # Remove previous assistant reply only
     remove_last_assistant_message()
 
     return process_chat(
