@@ -1,5 +1,4 @@
 import fitz
-import re
 
 
 # ==========================================================
@@ -7,9 +6,7 @@ import re
 # ==========================================================
 def read_pdf(file):
     """
-    Reads a PDF and returns:
-    - full text
-    - total pages
+    Extract all text from a PDF.
     """
 
     document = fitz.open(
@@ -23,21 +20,24 @@ def read_pdf(file):
 
         text += page.get_text()
 
-    total_pages = len(document)
+    pages = len(document)
 
     document.close()
 
-    return text, total_pages
+    return text, pages
 
 
 # ==========================================================
-# Split Text into Chunks
+# Split into Chunks
 # ==========================================================
 def split_text_into_chunks(
     text,
     chunk_size=1000,
     overlap=200,
 ):
+    """
+    Split text into overlapping chunks.
+    """
 
     chunks = []
 
@@ -60,6 +60,9 @@ def split_text_into_chunks(
 # Create Document Object
 # ==========================================================
 def create_document(file):
+    """
+    Creates a document dictionary from an uploaded PDF.
+    """
 
     text, pages = read_pdf(file)
 
@@ -81,91 +84,25 @@ def create_document(file):
 
 
 # ==========================================================
-# Search One Document
+# Statistics
 # ==========================================================
-def score_chunk(
-    question,
-    chunk,
-):
+def get_document_statistics(documents):
+    """
+    Returns overall document statistics.
+    """
 
-    words = re.findall(
-        r"\w+",
-        question.lower(),
-    )
-
-    score = 0
-
-    chunk_lower = chunk.lower()
-
-    for word in words:
-
-        score += chunk_lower.count(word)
-
-    return score
-
-
-# ==========================================================
-# Search Across All Documents
-# ==========================================================
-def find_relevant_document_chunk(
-    question,
-    documents,
-):
-
-    best_document = None
-    best_chunk = ""
-    highest_score = 0
+    total_pages = 0
+    total_chunks = 0
 
     for document in documents:
 
-        for chunk in document["chunks"]:
+        total_pages += document["pages"]
 
-            score = score_chunk(
-                question,
-                chunk,
-            )
-
-            if score > highest_score:
-
-                highest_score = score
-
-                best_chunk = chunk
-
-                best_document = document
+        total_chunks += document["chunk_count"]
 
     return {
 
-        "document": best_document,
-
-        "chunk": best_chunk,
-
-        "score": highest_score,
-
-    }
-
-
-# ==========================================================
-# Statistics
-# ==========================================================
-def get_document_statistics(
-    documents,
-):
-
-    total_files = len(documents)
-
-    total_pages = sum(
-        doc["pages"]
-        for doc in documents
-    )
-
-    total_chunks = sum(
-        doc["chunk_count"]
-        for doc in documents
-    )
-
-    return {
-
-        "files": total_files,
+        "files": len(documents),
 
         "pages": total_pages,
 

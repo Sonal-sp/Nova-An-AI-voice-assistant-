@@ -1,9 +1,14 @@
 import streamlit as st
 
 from services.memory import clear_messages
+
 from services.document_service import (
     create_document,
     get_document_statistics,
+)
+
+from services.embedding_service import (
+    create_embeddings,
 )
 
 from utils.helpers import chat_to_text
@@ -17,24 +22,21 @@ from utils.constants import (
 )
 
 
-# ==========================================================
-# Sidebar
-# ==========================================================
 def show_sidebar():
 
     with st.sidebar:
 
-        # ==================================================
+        # ============================================
         # Header
-        # ==================================================
+        # ============================================
         st.title("🤖 Nova")
         st.caption("Your Personal AI Assistant")
 
         st.divider()
 
-        # ==================================================
+        # ============================================
         # Response Mode
-        # ==================================================
+        # ============================================
         response_mode = st.radio(
             "🔊 Response Mode",
             [
@@ -46,16 +48,16 @@ def show_sidebar():
 
         st.divider()
 
-        # ==================================================
-        # Initialize Document Library
-        # ==================================================
+        # ============================================
+        # Initialize Documents
+        # ============================================
         if "documents" not in st.session_state:
 
             st.session_state.documents = []
 
-        # ==================================================
-        # Multi PDF Upload
-        # ==================================================
+        # ============================================
+        # Upload PDFs
+        # ============================================
         uploaded_files = st.file_uploader(
             "📄 Upload PDFs",
             type=["pdf"],
@@ -64,7 +66,7 @@ def show_sidebar():
 
         if uploaded_files:
 
-            existing_files = {
+            existing = {
 
                 doc["filename"]
 
@@ -74,8 +76,7 @@ def show_sidebar():
 
             for file in uploaded_files:
 
-                # Avoid duplicates
-                if file.name in existing_files:
+                if file.name in existing:
 
                     continue
 
@@ -85,43 +86,51 @@ def show_sidebar():
 
                     document = create_document(file)
 
+                    # --------------------------------
+                    # Build Embeddings
+                    # --------------------------------
+                    index, chunks = create_embeddings(
+                        document["chunks"]
+                    )
+
+                    document["index"] = index
+                    document["chunks"] = chunks
+
                     st.session_state.documents.append(
                         document
                     )
 
-        st.divider()
-
-        # ==================================================
-        # Uploaded Documents
-        # ==================================================
+        # ============================================
+        # Documents
+        # ============================================
         st.subheader("📂 Uploaded Documents")
 
         documents = st.session_state.documents
 
         if documents:
 
-            for index, document in enumerate(documents):
+            for i, doc in enumerate(documents):
 
                 with st.expander(
-                    f"📄 {document['filename']}",
+                    f"📄 {doc['filename']}",
                     expanded=False,
                 ):
 
                     st.write(
-                        f"Pages : {document['pages']}"
+                        f"Pages : {doc['pages']}"
                     )
 
                     st.write(
-                        f"Chunks : {document['chunk_count']}"
+                        f"Chunks : {doc['chunk_count']}"
                     )
 
                     if st.button(
                         "🗑 Remove",
-                        key=f"remove_doc_{index}",
+                        key=f"remove_{i}",
                         use_container_width=True,
                     ):
 
-                        st.session_state.documents.pop(index)
+                        st.session_state.documents.pop(i)
 
                         st.rerun()
 
@@ -131,24 +140,30 @@ def show_sidebar():
 
         st.divider()
 
-        # ==================================================
-        # Document Statistics
-        # ==================================================
+        # ============================================
+        # Statistics
+        # ============================================
+        stats = get_document_statistics(documents)
+
         st.subheader("📊 Documents")
 
-        stats = get_document_statistics(
-            documents
+        st.write(
+            f"Files : {stats['files']}"
         )
 
-        st.write(f"Files : {stats['files']}")
-        st.write(f"Pages : {stats['pages']}")
-        st.write(f"Chunks : {stats['chunks']}")
+        st.write(
+            f"Pages : {stats['pages']}"
+        )
+
+        st.write(
+            f"Chunks : {stats['chunks']}"
+        )
 
         st.divider()
 
-        # ==================================================
-        # Session Statistics
-        # ==================================================
+        # ============================================
+        # Session
+        # ============================================
         st.subheader("💬 Session")
 
         st.write(
@@ -161,9 +176,9 @@ def show_sidebar():
 
         st.divider()
 
-        # ==================================================
+        # ============================================
         # Export Chat
-        # ==================================================
+        # ============================================
         chat_text = chat_to_text(
             st.session_state.get(
                 "messages",
@@ -181,9 +196,9 @@ def show_sidebar():
 
         st.divider()
 
-        # ==================================================
+        # ============================================
         # Clear Chat
-        # ==================================================
+        # ============================================
         if st.button(
             "🗑 Clear Chat",
             use_container_width=True,
