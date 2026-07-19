@@ -1,5 +1,5 @@
 import streamlit as st
-
+import services.document_service
 from services.memory import initialize_memory
 from services.chat_service import process_chat
 from ui.response import display_response

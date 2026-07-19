@@ -4,6 +4,8 @@ import streamlit as st
 from services.memory import (
     add_message,
     get_messages,
+    get_last_user_message,
+    remove_last_assistant_message,
 )
 
 from services.assistant import (
@@ -32,23 +34,21 @@ from services.url_service import (
 )
 
 
-def process_chat(user_prompt):
+def process_chat(user_prompt, save_user=True):
+
     if not user_prompt:
         return None
+
     start_time = time.perf_counter()
 
-    add_message(
-        "user",
-        user_prompt,
-    )
+    if save_user:
+        add_message("user", user_prompt)
 
     document_context = None
     web_context = None
     url_context = None
 
-    # -----------------------------
-    # PDF Context
-    # -----------------------------
+    # PDF
     if st.session_state.get("pdf_chunks"):
 
         document_context = find_relevant_chunk(
@@ -56,9 +56,7 @@ def process_chat(user_prompt):
             st.session_state["pdf_chunks"],
         )
 
-    # -----------------------------
-    # URL Context
-    # -----------------------------
+    # URL
     url = extract_url(user_prompt)
 
     if url:
@@ -69,9 +67,7 @@ def process_chat(user_prompt):
 
             url_context = webpage[:12000]
 
-    # -----------------------------
     # Web Search
-    # -----------------------------
     if should_search_web(user_prompt):
 
         results = search_web(user_prompt)
@@ -92,15 +88,33 @@ def process_chat(user_prompt):
         assistant_response,
     )
 
-    elapsed = time.perf_counter() - start_time
+    elapsed = round(
+        time.perf_counter() - start_time,
+        2,
+    )
 
     return {
-    "text": assistant_response,
-    "metadata": {
-        "response_time": round(elapsed, 2),
-        "model": "Gemini",
-        "used_pdf": document_context is not None,
-        "used_web": web_context is not None,
-        "used_url": url_context is not None,
+        "text": assistant_response,
+        "metadata": {
+            "response_time": elapsed,
+            "model": "Gemini",
+            "used_pdf": document_context is not None,
+            "used_web": web_context is not None,
+            "used_url": url_context is not None,
+        },
     }
-}
+
+
+def regenerate_response():
+
+    user_prompt = get_last_user_message()
+
+    if not user_prompt:
+        return None
+
+    remove_last_assistant_message()
+
+    return process_chat(
+        user_prompt,
+        save_user=False,
+    )
