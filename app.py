@@ -1,71 +1,80 @@
 import streamlit as st
-import services.document_service
+
 from services.memory import initialize_memory
-from services.chat_service import process_chat
+from services.chat_service import (
+    process_chat,
+    regenerate_response,
+)
+
 from ui.response import display_response
 from ui.sidebar import show_sidebar
 from ui.welcome import show_welcome
 from ui.chat import display_chat
 from ui.input import get_user_input
-from utils.constants import (
-    THINKING_MESSAGE,
-)
 
-# -----------------------------
+from utils.constants import THINKING_MESSAGE
+
+
 # Page Configuration
-# -----------------------------
+
 st.set_page_config(
     page_title="Nova",
     page_icon="🤖",
     layout="centered",
 )
 
-# -----------------------------
-# Initialize Memory
-# -----------------------------
+
+# Initialize Session
 initialize_memory()
 
-# -----------------------------
+
 # Sidebar
-# -----------------------------
 response_mode = show_sidebar()
 
-# -----------------------------
 # Header
-# -----------------------------
 st.title("🤖 Nova")
 st.caption("Your Personal AI Assistant powered by Gemini")
 
-# -----------------------------
 # Welcome Screen
-# -----------------------------
 show_welcome()
 
-# -----------------------------
-# Chat History
-# -----------------------------
+# Handle Regenerate Request
+if st.session_state.get("pending_regenerate", False):
+
+    st.session_state.pending_regenerate = False
+
+    with st.spinner("🔄 Regenerating response..."):
+
+        result = regenerate_response()
+
+    if result:
+
+        display_response(
+            result=result,
+            response_mode=response_mode,
+        )
+
+    st.stop()
+
+# Display Chat History
 display_chat()
 
-# -----------------------------
-# User Input
-# -----------------------------
+# Chat Input
 user_prompt = get_user_input()
 
-# -----------------------------
-# AI Conversation
-# -----------------------------
+# New User Message
 if user_prompt:
 
-    # Show user's latest message
     with st.chat_message("user"):
+
         st.markdown(user_prompt)
 
-    # Generate assistant response
     with st.spinner(THINKING_MESSAGE):
+
         result = process_chat(user_prompt)
 
-    # Display assistant response
     if result:
+
         display_response(
             result=result,
             response_mode=response_mode,

@@ -2,8 +2,9 @@ import asyncio
 import streamlit as st
 
 from services.text_to_speech import text_to_speech
+
 from ui.response_card import display_response_card
-from utils.code_formatter import parse_response
+
 from utils.loading import loading
 
 from utils.constants import (
@@ -11,54 +12,47 @@ from utils.constants import (
     SPEAKING_MESSAGE,
 )
 
-from ui.metadata import display_metadata
 
-
+# Display Assistant Response
 def display_response(
-    result,
-    response_mode,
+    result: dict,
+    response_mode: str,
 ):
 
+    # Render complete response card
     display_response_card(
-        result,
-        response_mode,
+        result=result,
+        response_mode=response_mode,
     )
 
+    # Voice Playback
+    if response_mode == TEXT_ONLY:
+        return
+
     response = result["text"]
-    metadata = result["metadata"]
 
-    with st.chat_message("assistant"):
+    try:
 
-        blocks = parse_response(response)
+        with loading(SPEAKING_MESSAGE):
 
-        for block in blocks:
+            asyncio.run(
+                text_to_speech(response)
+            )
 
-            if block["type"] == "markdown":
+    except RuntimeError:
 
-                st.markdown(
-                    block["content"]
-                )
+        loop = asyncio.new_event_loop()
 
-            elif block["type"] == "code":
+        asyncio.set_event_loop(loop)
 
-                st.code(
-                    block["content"],
-                    language=block["language"],
-                )
-        display_metadata(metadata)
+        with loading(SPEAKING_MESSAGE):
 
-        if response_mode != TEXT_ONLY:
+            loop.run_until_complete(
+                text_to_speech(response)
+            )
 
-            try:
+        loop.close()
 
-                with loading(SPEAKING_MESSAGE):
+    except Exception as e:
 
-                    asyncio.run(
-                        text_to_speech(response)
-                    )
-
-            except Exception as e:
-
-                st.warning(
-                    f"🔊 {e}"
-                )
+        st.warning(f"🔊 {e}")

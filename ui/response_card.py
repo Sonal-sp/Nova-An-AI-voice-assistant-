@@ -12,6 +12,7 @@ from ui.actions import (
 )
 
 
+# Assistant Response Card
 def display_response_card(
     result: dict,
     response_mode: str,
@@ -22,14 +23,15 @@ def display_response_card(
 
     with st.chat_message("assistant"):
 
+        # Render Markdown & Code Blocks
         blocks = parse_response(response)
 
-        for block in blocks:
+        for i, block in enumerate(blocks):
 
             if block["type"] == "markdown":
 
                 st.markdown(
-                    block["content"]
+                    block["content"],
                 )
 
             elif block["type"] == "code":
@@ -39,21 +41,27 @@ def display_response_card(
                     language=block["language"],
                 )
 
+        # Metadata
         st.divider()
 
         display_metadata(metadata)
 
+        # Action Buttons
         st.divider()
 
         col1, col2, col3 = st.columns(3)
 
         with col1:
+
             copy_button(response)
 
         with col2:
+
             regenerate_button()
 
         with col3:
+
             replay_button(response)
 
+        # Feedback
         feedback_buttons()

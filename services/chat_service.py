@@ -34,48 +34,82 @@ from services.url_service import (
 )
 
 
-def process_chat(user_prompt, save_user=True):
+# Main Chat Pipeline
+def process_chat(
+    user_prompt,
+    save_user=True,
+):
 
     if not user_prompt:
         return None
 
     start_time = time.perf_counter()
 
+    
+    # Save User Message
     if save_user:
-        add_message("user", user_prompt)
+
+        add_message(
+            "user",
+            user_prompt,
+        )
 
     document_context = None
     web_context = None
     url_context = None
 
-    # PDF
-    if st.session_state.get("pdf_chunks"):
+   
+    # PDF RAG
+    pdf_chunks = st.session_state.get(
+        "pdf_chunks",
+        [],
+    )
+
+    if pdf_chunks:
 
         document_context = find_relevant_chunk(
             user_prompt,
-            st.session_state["pdf_chunks"],
+            pdf_chunks,
         )
 
-    # URL
+    
+    # URL Reader
     url = extract_url(user_prompt)
 
     if url:
 
-        webpage = extract_text_from_url(url)
+        try:
 
-        if webpage:
+            webpage = extract_text_from_url(url)
 
-            url_context = webpage[:12000]
+            if webpage:
 
+                url_context = webpage[:12000]
+
+        except Exception:
+
+            url_context = None
+
+   
     # Web Search
     if should_search_web(user_prompt):
 
-        results = search_web(user_prompt)
+        try:
 
-        if results:
+            results = search_web(user_prompt)
 
-            web_context = format_search_results(results)
+            if results:
 
+                web_context = format_search_results(
+                    results,
+                )
+
+        except Exception:
+
+            web_context = None
+
+    
+    # Gemini Response
     assistant_response = get_assistant_response(
         messages=get_messages(),
         document_context=document_context,
@@ -83,6 +117,8 @@ def process_chat(user_prompt, save_user=True):
         url_context=url_context,
     )
 
+   
+    # Save Assistant Message
     add_message(
         "assistant",
         assistant_response,
@@ -93,28 +129,42 @@ def process_chat(user_prompt, save_user=True):
         2,
     )
 
+   
+    # Return Response
     return {
+
         "text": assistant_response,
+
         "metadata": {
+
             "response_time": elapsed,
+
             "model": "Gemini",
-            "used_pdf": document_context is not None,
-            "used_web": web_context is not None,
-            "used_url": url_context is not None,
+
+            "used_pdf": bool(document_context),
+
+            "used_web": bool(web_context),
+
+            "used_url": bool(url_context),
+
         },
+
     }
 
 
+# Regenerate Last Response
 def regenerate_response():
 
     user_prompt = get_last_user_message()
 
     if not user_prompt:
+
         return None
 
+    # Remove previous assistant reply only
     remove_last_assistant_message()
 
     return process_chat(
-        user_prompt,
+        user_prompt=user_prompt,
         save_user=False,
     )
