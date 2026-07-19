@@ -2,48 +2,66 @@ from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
 
-# ---------------------------------------------------
-# Load embedding model only once
-# ---------------------------------------------------
-model = SentenceTransformer("all-MiniLM-L6-v2")
+# ==========================================================
+# Load Embedding Model (Loads only once)
+# ==========================================================
+model = SentenceTransformer(
+    "all-MiniLM-L6-v2"
+)
 
 
-# ---------------------------------------------------
-# Create embeddings for PDF chunks
-# ---------------------------------------------------
+# ==========================================================
+# Create Embeddings
+# ==========================================================
 def create_embeddings(chunks):
     """
-    Converts PDF chunks into embeddings and
-    builds a FAISS index.
+    Creates FAISS embeddings for document chunks.
 
-    Returns:
-        index: FAISS index
-        chunks: Original chunks
+    Parameters
+    ----------
+    chunks : list
+        List of chunk dictionaries.
+
+    Returns
+    -------
+    index
+        FAISS index
+
+    chunks
+        Original chunk objects
     """
 
     if not chunks:
         return None, []
 
+    # ---------------------------------------
+    # Embed ONLY the chunk text
+    # ---------------------------------------
+    texts = [
+        chunk["text"]
+        for chunk in chunks
+    ]
+
     embeddings = model.encode(
-        chunks,
+        texts,
         convert_to_numpy=True,
         show_progress_bar=False,
-    )
-
-    embeddings = embeddings.astype("float32")
+    ).astype(np.float32)
 
     dimension = embeddings.shape[1]
 
-    index = faiss.IndexFlatL2(dimension)
+    index = faiss.IndexFlatL2(
+        dimension
+    )
 
     index.add(embeddings)
 
     return index, chunks
 
 
-# ---------------------------------------------------
-# Search most relevant chunks
-# ---------------------------------------------------
+# ==========================================================
+# Semantic Search
+# ==========================================================
 def search_similar_chunks(
     question,
     index,
@@ -51,16 +69,24 @@ def search_similar_chunks(
     top_k=3,
 ):
     """
-    Returns the most relevant chunks for a question.
+    Returns the top matching chunk dictionaries.
+
+    Each result contains:
+    text
+    page
+    chunk_id
     """
 
-    if index is None or not chunks:
-        return ""
+    if (
+        index is None
+        or not chunks
+    ):
+        return []
 
     query_embedding = model.encode(
         [question],
         convert_to_numpy=True,
-    ).astype("float32")
+    ).astype(np.float32)
 
     distances, indices = index.search(
         query_embedding,
@@ -73,6 +99,8 @@ def search_similar_chunks(
 
         if idx < len(chunks):
 
-            results.append(chunks[idx])
+            results.append(
+                chunks[idx]
+            )
 
-    return "\n\n".join(results)
+    return results

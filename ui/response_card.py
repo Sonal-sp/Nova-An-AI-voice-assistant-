@@ -12,7 +12,6 @@ from ui.actions import (
 )
 
 
-# Assistant Response Card
 def display_response_card(
     result: dict,
     response_mode: str,
@@ -21,17 +20,27 @@ def display_response_card(
     response = result["text"]
     metadata = result["metadata"]
 
+    # -----------------------------------------
+    # Get citations
+    # -----------------------------------------
+    citations = result.get(
+        "citations",
+        [],
+    )
+
     with st.chat_message("assistant"):
 
-        # Render Markdown & Code Blocks
+        # =====================================
+        # Markdown + Code Blocks
+        # =====================================
         blocks = parse_response(response)
 
-        for i, block in enumerate(blocks):
+        for block in blocks:
 
             if block["type"] == "markdown":
 
                 st.markdown(
-                    block["content"],
+                    block["content"]
                 )
 
             elif block["type"] == "code":
@@ -41,27 +50,61 @@ def display_response_card(
                     language=block["language"],
                 )
 
+        # =====================================
+        # Sources
+        # =====================================
+
+        if citations:
+
+            st.divider()
+
+            st.markdown("### 📚 Sources")
+
+            seen = set()
+
+            for citation in citations:
+
+                key = (
+                    citation["document"],
+                    citation["page"],
+                )
+
+                if key in seen:
+                    continue
+
+                seen.add(key)
+
+                st.markdown(
+                    f"""
+📄 **{citation['document']}**
+
+Page **{citation['page']}**
+"""
+                )
+
+        # =====================================
         # Metadata
+        # =====================================
+
         st.divider()
 
         display_metadata(metadata)
 
-        # Action Buttons
+        # =====================================
+        # Actions
+        # =====================================
+
         st.divider()
 
         col1, col2, col3 = st.columns(3)
 
         with col1:
-
             copy_button(response)
 
         with col2:
-
             regenerate_button()
 
         with col3:
-
             replay_button(response)
 
-        # Feedback
         feedback_buttons()

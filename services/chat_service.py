@@ -8,7 +8,9 @@ from services.memory import (
     remove_last_assistant_message,
 )
 
-from services.assistant import get_assistant_response
+from services.assistant import (
+    get_assistant_response,
+)
 
 from services.embedding_service import (
     search_similar_chunks,
@@ -32,9 +34,9 @@ from services.url_service import (
 )
 
 
-# =====================================================
+# ==========================================================
 # Main Chat Pipeline
-# =====================================================
+# ==========================================================
 def process_chat(
     user_prompt,
     save_user=True,
@@ -59,9 +61,11 @@ def process_chat(
     web_context = None
     url_context = None
 
-    # =====================================================
+    citations = []
+
+    # ==========================================================
     # Semantic PDF Search
-    # =====================================================
+    # ==========================================================
 
     documents = st.session_state.get(
         "documents",
@@ -74,17 +78,38 @@ def process_chat(
 
         for document in documents:
 
-            context = search_similar_chunks(
+            results = search_similar_chunks(
                 question=user_prompt,
                 index=document["index"],
                 chunks=document["chunks"],
                 top_k=3,
             )
 
-            if context.strip():
+            if results:
+
+                chunk_text = []
+
+                for chunk in results:
+
+                    chunk_text.append(
+                        chunk["text"]
+                    )
+
+                    citations.append(
+                        {
+                            "document": document["filename"],
+                            "page": chunk["page"],
+                            "chunk_id": chunk["chunk_id"],
+                        }
+                    )
 
                 contexts.append(
-                    f"Document: {document['filename']}\n\n{context}"
+                    f"""
+Document:
+{document['filename']}
+
+{"\n\n".join(chunk_text)}
+"""
                 )
 
         if contexts:
@@ -93,9 +118,9 @@ def process_chat(
                 contexts
             )
 
-    # =====================================================
+    # ==========================================================
     # URL Reader
-    # =====================================================
+    # ==========================================================
 
     url = extract_url(user_prompt)
 
@@ -113,9 +138,9 @@ def process_chat(
 
             pass
 
-    # =====================================================
+    # ==========================================================
     # Web Search
-    # =====================================================
+    # ==========================================================
 
     if should_search_web(user_prompt):
 
@@ -133,9 +158,9 @@ def process_chat(
 
             pass
 
-    # =====================================================
+    # ==========================================================
     # Gemini
-    # =====================================================
+    # ==========================================================
 
     assistant_response = get_assistant_response(
         messages=get_messages(),
@@ -159,20 +184,32 @@ def process_chat(
     )
 
     return {
+
         "text": assistant_response,
+
         "metadata": {
+
             "response_time": elapsed,
+
             "model": "Gemini",
-            "used_pdf": document_context is not None,
-            "used_web": web_context is not None,
-            "used_url": url_context is not None,
+
+            "used_pdf": bool(document_context),
+
+            "used_web": bool(web_context),
+
+            "used_url": bool(url_context),
+
         },
+
+        # ⭐ NEW
+        "citations": citations,
+
     }
 
 
-# =====================================================
+# ==========================================================
 # Regenerate
-# =====================================================
+# ==========================================================
 def regenerate_response():
 
     user_prompt = get_last_user_message()

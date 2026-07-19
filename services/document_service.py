@@ -6,80 +6,99 @@ import fitz
 # ==========================================================
 def read_pdf(file):
     """
-    Extract all text from a PDF.
+    Reads a PDF and returns:
+    - Full text
+    - Total pages
+    - PyMuPDF document object
     """
 
-    document = fitz.open(
+    pdf = fitz.open(
         stream=file.read(),
         filetype="pdf",
     )
 
-    text = ""
+    pages = len(pdf)
 
-    for page in document:
-
-        text += page.get_text()
-
-    pages = len(document)
-
-    document.close()
-
-    return text, pages
+    return pdf, pages
 
 
 # ==========================================================
-# Split into Chunks
+# Split One Page into Chunks
 # ==========================================================
-def split_text_into_chunks(
+def split_page_into_chunks(
     text,
+    page_number,
     chunk_size=1000,
     overlap=200,
+    start_chunk_id=0,
 ):
     """
-    Split text into overlapping chunks.
+    Creates metadata-rich chunks from a single page.
     """
 
     chunks = []
 
     start = 0
+    chunk_id = start_chunk_id
 
     while start < len(text):
 
         end = start + chunk_size
 
+        chunk_text = text[start:end]
+
         chunks.append(
-            text[start:end]
+            {
+                "text": chunk_text,
+                "page": page_number,
+                "chunk_id": chunk_id,
+            }
         )
+
+        chunk_id += 1
 
         start += chunk_size - overlap
 
-    return chunks
+    return chunks, chunk_id
 
 
 # ==========================================================
-# Create Document Object
+# Create Document
 # ==========================================================
 def create_document(file):
     """
-    Creates a document dictionary from an uploaded PDF.
+    Reads a PDF and creates a metadata-rich document object.
     """
 
-    text, pages = read_pdf(file)
+    pdf, pages = read_pdf(file)
 
-    chunks = split_text_into_chunks(text)
+    full_text = ""
+    all_chunks = []
+
+    chunk_counter = 0
+
+    for page_index, page in enumerate(pdf):
+
+        page_text = page.get_text()
+
+        full_text += page_text
+
+        page_chunks, chunk_counter = split_page_into_chunks(
+            text=page_text,
+            page_number=page_index + 1,
+            start_chunk_id=chunk_counter,
+        )
+
+        all_chunks.extend(page_chunks)
+
+    pdf.close()
 
     return {
-
         "filename": file.name,
-
         "pages": pages,
-
-        "text": text,
-
-        "chunks": chunks,
-
-        "chunk_count": len(chunks),
-
+        "text": full_text,
+        "chunks": all_chunks,
+        "chunk_count": len(all_chunks),
     }
 
 
@@ -88,24 +107,21 @@ def create_document(file):
 # ==========================================================
 def get_document_statistics(documents):
     """
-    Returns overall document statistics.
+    Returns document statistics.
     """
 
-    total_pages = 0
-    total_chunks = 0
+    total_pages = sum(
+        doc["pages"]
+        for doc in documents
+    )
 
-    for document in documents:
-
-        total_pages += document["pages"]
-
-        total_chunks += document["chunk_count"]
+    total_chunks = sum(
+        doc["chunk_count"]
+        for doc in documents
+    )
 
     return {
-
         "files": len(documents),
-
         "pages": total_pages,
-
         "chunks": total_chunks,
-
     }
