@@ -11,6 +11,10 @@ from services.embedding_service import (
     create_embeddings,
 )
 
+from services.bm25_service import (
+    build_bm25_index,
+)
+
 from utils.helpers import chat_to_text
 from utils.loading import loading
 
@@ -52,7 +56,6 @@ def show_sidebar():
         # Initialize Documents
         # ============================================
         if "documents" not in st.session_state:
-
             st.session_state.documents = []
 
         # ============================================
@@ -67,41 +70,52 @@ def show_sidebar():
         if uploaded_files:
 
             existing = {
-
                 doc["filename"]
-
                 for doc in st.session_state.documents
-
             }
 
             for file in uploaded_files:
 
                 if file.name in existing:
-
                     continue
 
                 with loading(
                     f"{PDF_LOADING_MESSAGE} ({file.name})"
                 ):
 
+                    # --------------------------------
+                    # Create Document
+                    # --------------------------------
                     document = create_document(file)
 
                     # --------------------------------
-                    # Build Embeddings
+                    # Build FAISS Index
                     # --------------------------------
-                    index, chunks = create_embeddings(
+                    faiss_index, chunks = create_embeddings(
                         document["chunks"]
                     )
 
-                    document["index"] = index
+                    # --------------------------------
+                    # Build BM25 Index
+                    # --------------------------------
+                    bm25_index = build_bm25_index(
+                        chunks
+                    )
+
+                    # --------------------------------
+                    # Store Indexes
+                    # --------------------------------
+                    document["faiss_index"] = faiss_index
+                    document["bm25_index"] = bm25_index
                     document["chunks"] = chunks
 
+                    # Save document
                     st.session_state.documents.append(
                         document
                     )
 
         # ============================================
-        # Documents
+        # Uploaded Documents
         # ============================================
         st.subheader("📂 Uploaded Documents")
 
@@ -124,6 +138,12 @@ def show_sidebar():
                         f"Chunks : {doc['chunk_count']}"
                     )
 
+                    if doc.get("faiss_index") is not None:
+                        st.success("🧠 FAISS Indexed")
+
+                    if doc.get("bm25_index") is not None:
+                        st.success("🔍 BM25 Indexed")
+
                     if st.button(
                         "🗑 Remove",
                         key=f"remove_{i}",
@@ -131,7 +151,6 @@ def show_sidebar():
                     ):
 
                         st.session_state.documents.pop(i)
-
                         st.rerun()
 
         else:
@@ -205,7 +224,6 @@ def show_sidebar():
         ):
 
             clear_messages()
-
             st.rerun()
 
     return response_mode

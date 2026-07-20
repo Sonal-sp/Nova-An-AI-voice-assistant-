@@ -33,6 +33,9 @@ from services.url_service import (
     extract_text_from_url,
 )
 
+from services.bm25_service import (
+    search_bm25,
+)
 
 # ==========================================================
 # Main Chat Pipeline
@@ -64,7 +67,7 @@ def process_chat(
     citations = []
 
     # ==========================================================
-    # Semantic PDF Search
+    # Hybrid PDF Search (FAISS + BM25)
     # ==========================================================
 
     documents = st.session_state.get(
@@ -78,46 +81,72 @@ def process_chat(
 
         for document in documents:
 
-            results = search_similar_chunks(
+            # ---------------------------------------
+            # FAISS Semantic Search
+            # ---------------------------------------
+            semantic_results = search_similar_chunks(
                 question=user_prompt,
-                index=document["index"],
+                index=document["faiss_index"],
                 chunks=document["chunks"],
                 top_k=3,
             )
 
-            if results:
+            # ---------------------------------------
+            # BM25 Keyword Search
+            # ---------------------------------------
+            keyword_results = search_bm25(
+                question=user_prompt,
+                bm25=document["bm25_index"],
+                chunks=document["chunks"],
+                top_k=3,
+            )
 
-                chunk_text = []
+            # ---------------------------------------
+            # Merge Results & Remove Duplicates
+            # ---------------------------------------
+            merged_results = []
+            seen = set()
 
-                for chunk in results:
+            for chunk in semantic_results + keyword_results:
 
-                    chunk_text.append(
-                        chunk["text"]
-                    )
+                if chunk["text"] not in seen:
 
-                    citations.append(
-                        {
-                            "document": document["filename"],
-                            "page": chunk["page"],
-                            "chunk_id": chunk["chunk_id"],
-                        }
-                    )
+                    merged_results.append(chunk)
+                    seen.add(chunk["text"])
 
-                contexts.append(
-                    f"""
+            if not merged_results:
+                continue
+
+            chunk_text = []
+
+            for chunk in merged_results:
+
+                chunk_text.append(
+                    chunk["text"]
+                )
+
+                citations.append(
+                    {
+                        "document": document["filename"],
+                        "page": chunk["page"],
+                        "chunk_id": chunk["chunk_id"],
+                    }
+                )
+
+            contexts.append(
+                f"""
 Document:
 {document['filename']}
 
 {"\n\n".join(chunk_text)}
 """
-                )
+            )
 
         if contexts:
 
             document_context = "\n\n------------------------\n\n".join(
                 contexts
             )
-
     # ==========================================================
     # URL Reader
     # ==========================================================
