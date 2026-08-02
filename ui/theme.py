@@ -5,7 +5,7 @@ from utils.settings import get_setting
 def apply_theme():
     """
     Applies comprehensive custom CSS dynamic styling according to stored theme setting ('Dark', 'Light', 'Nova Cyberpunk').
-    Fixes component-level background and text color overrides.
+    Fixes component-level background, chat input container, and text color overrides.
     """
     theme_name = get_setting("theme", "Dark")
 
@@ -28,7 +28,7 @@ def apply_theme():
             }
 
             /* 3. Typography & Text Elements */
-            h1, h2, h3, h4, h5, h6, p, label, span, div {
+            h1, h2, h3, h4, h5, h6, p, label, span {
                 color: #0F172A !important;
             }
 
@@ -40,8 +40,35 @@ def apply_theme():
                 border-radius: 12px !important;
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
             }
+            [data-testid="stChatMessage"] * {
+                color: #0F172A !important;
+            }
 
-            /* 5. Expanders & Containers */
+            /* 5. Bottom Chat Input Container & Text Box Fix */
+            [data-testid="stBottom"], [data-testid="stChatInputContainer"] {
+                background-color: #F8FAFC !important;
+                border-top: 1px solid #E2E8F0 !important;
+            }
+            [data-testid="stChatInput"] {
+                background-color: #FFFFFF !important;
+                border: 1px solid #CBD5E1 !important;
+                border-radius: 12px !important;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
+            }
+            [data-testid="stChatInput"] textarea {
+                background-color: #FFFFFF !important;
+                color: #0F172A !important;
+            }
+            [data-testid="stChatInput"] textarea::placeholder {
+                color: #64748B !important;
+            }
+            [data-testid="stChatInputSubmitButton"] {
+                background-color: #2563EB !important;
+                color: #FFFFFF !important;
+                border-radius: 8px !important;
+            }
+
+            /* 6. Expanders & Containers */
             div[data-testid="stExpander"] {
                 background-color: #FFFFFF !important;
                 border: 1px solid #E2E8F0 !important;
@@ -51,14 +78,14 @@ def apply_theme():
                 color: #0F172A !important;
             }
 
-            /* 6. Form Controls, Inputs & Selectboxes */
+            /* 7. Form Controls, Inputs & Selectboxes */
             input, textarea, div[data-baseweb="select"] > div {
                 background-color: #FFFFFF !important;
-                color: #FFFFFF !important;
+                color: #0F172A !important;
                 border-color: #CBD5E1 !important;
             }
 
-            /* 7. Buttons */
+            /* 8. Buttons */
             .stButton > button {
                 background-color: #FFFFFF !important;
                 color: #2563EB !important;
@@ -70,7 +97,7 @@ def apply_theme():
                 border-color: #2563EB !important;
             }
 
-            /* 8. Tabs & Navigation */
+            /* 9. Tabs & Navigation */
             button[data-baseweb="tab"] {
                 color: #475569 !important;
             }
@@ -79,12 +106,12 @@ def apply_theme():
                 border-bottom-color: #2563EB !important;
             }
 
-            /* 9. Metrics Cards */
+            /* 10. Metrics Cards */
             [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {
                 color: #0F172A !important;
             }
 
-            /* 10. Code & Pre Blocks */
+            /* 11. Code & Pre Blocks */
             code, pre {
                 background-color: #F1F5F9 !important;
                 color: #0F172A !important;
@@ -113,6 +140,20 @@ def apply_theme():
 
             /* Typography */
             h1, h2, h3, h4, h5, h6, label, span {
+                color: #00F0FF !important;
+            }
+
+            /* Bottom Chat Input */
+            [data-testid="stBottom"], [data-testid="stChatInputContainer"] {
+                background-color: #0D0221 !important;
+                border-top: 1px solid #FF007F !important;
+            }
+            [data-testid="stChatInput"] {
+                background-color: #16003B !important;
+                border: 1px solid #00F0FF !important;
+                box-shadow: 0 0 10px rgba(0, 240, 255, 0.3) !important;
+            }
+            [data-testid="stChatInput"] textarea {
                 color: #00F0FF !important;
             }
 
@@ -151,6 +192,17 @@ def apply_theme():
             .stApp, [data-testid="stAppViewContainer"], header[data-testid="stHeader"] {
                 background-color: #0E1117 !important;
                 color: #FAFAFA !important;
+            }
+            [data-testid="stBottom"], [data-testid="stChatInputContainer"] {
+                background-color: #0E1117 !important;
+                border-top: 1px solid #1E293B !important;
+            }
+            [data-testid="stChatInput"] {
+                background-color: #1E293B !important;
+                border: 1px solid #334155 !important;
+            }
+            [data-testid="stChatInput"] textarea {
+                color: #F8FAFC !important;
             }
             div[data-testid="stExpander"] {
                 background-color: #1E293B !important;
