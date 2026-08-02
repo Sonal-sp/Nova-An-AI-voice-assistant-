@@ -1,4 +1,5 @@
 import streamlit as st
+import psutil
 from PIL import Image
 
 from services.memory import clear_messages
@@ -27,20 +28,54 @@ from utils.constants import (
 
 
 def show_sidebar() -> str:
+    """
+    Renders Nova's AI Operating System Control Center Sidebar.
+    Featuring live CPU/RAM metrics, model engine selection, voice widget,
+    quick launch desktop shortcuts, document indexers, and transcript exporters.
+    """
     with st.sidebar:
         # ============================================
-        # Header
+        # AI OS Header & Status Banner
         # ============================================
-        st.title("🤖 Nova")
-        st.caption("Your Personal AI Assistant")
+        cpu_usage = psutil.cpu_percent(interval=None)
+        mem_usage = psutil.virtual_memory().percent
+
+        st.markdown(
+            f"""
+            <div style="
+                background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%);
+                border: 1px solid rgba(56, 189, 248, 0.25);
+                border-radius: 16px;
+                padding: 16px;
+                margin-bottom: 16px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            ">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 26px;">🤖</span>
+                        <div>
+                            <div style="font-weight: 700; font-size: 18px; color: #F8FAFC;">Nova OS</div>
+                            <div style="font-size: 11px; color: #94A3B8;">AI Desktop Control</div>
+                        </div>
+                    </div>
+                    <span class="nova-badge">🟢 Online</span>
+                </div>
+                <div style="display: flex; gap: 12px; margin-top: 14px; font-size: 11px; color: #CBD5E1; font-family: monospace;">
+                    <div>💻 CPU: <b>{cpu_usage}%</b></div>
+                    <div>🧠 RAM: <b>{mem_usage}%</b></div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
         st.divider()
 
         # ============================================
-        # Response Mode & Model Switcher (Local AI & Cloud)
+        # Response Mode & Model Switcher
         # ============================================
         response_mode = st.radio(
-            "🔊 Response Mode",
+            "🔊 Output Mode",
             [
                 TEXT_ONLY,
                 VOICE_ONLY,
@@ -67,10 +102,10 @@ def show_sidebar() -> str:
         st.divider()
 
         # ============================================
-        # Live Voice Assistant Widget (Wake-Word Enabled)
+        # Live Voice Assistant Widget
         # ============================================
-        st.subheader("🎙️ Live Voice Assistant")
-        st.caption("Say **'Hey Nova'** or click below to speak!")
+        st.subheader("🎙️ Voice Assistant")
+        st.caption("Trigger with **'Hey Nova'** or click below:")
 
         if st.button("🎤 Speak Voice Command", use_container_width=True):
             st.session_state.is_listening = True
@@ -86,7 +121,7 @@ def show_sidebar() -> str:
                                 st.toast("✨ Wake word 'Hey Nova' recognized!", icon="🎙️")
                             st.rerun()
                     except Exception as e:
-                        st.error(f"Voice Recognition Error: {e}")
+                        st.error(f"Voice Error: {e}")
 
         if st.session_state.get("is_listening", False):
             render_audio_visualizer(state="listening", label="Listening for 'Hey Nova'...")
@@ -94,7 +129,7 @@ def show_sidebar() -> str:
         st.divider()
 
         # ============================================
-        # Settings, Analytics, Productivity & Integrations Toggles
+        # Control Center Toggles
         # ============================================
         st.subheader("⚙️ Control Center")
         show_settings = st.toggle("Settings & System Health", value=st.session_state.get("show_settings_dashboard", False))
@@ -112,9 +147,9 @@ def show_sidebar() -> str:
         st.divider()
 
         # ============================================
-        # Desktop Assistant Quick Launcher
+        # Desktop Apps Quick Launcher (Raycast Style)
         # ============================================
-        st.subheader("🖥️ Desktop Apps Quick Launch")
+        st.subheader("🖥️ Desktop Raycast Launcher")
         d_col1, d_col2 = st.columns(2)
         with d_col1:
             if st.button("💻 VS Code", use_container_width=True):
@@ -131,16 +166,16 @@ def show_sidebar() -> str:
                 res = launch_app("calc")
                 st.toast(res["message"])
 
-        if st.button("📊 Quick Diagnostics", use_container_width=True):
+        if st.button("📊 System Diagnostics", use_container_width=True):
             diag = get_system_diagnostics()
             st.info(diag["summary_markdown"])
 
         st.divider()
 
         # ============================================
-        # Quick Web Launcher
+        # Browser Quick Launcher
         # ============================================
-        st.subheader("🌐 Quick Browser Launch")
+        st.subheader("🌐 Quick Web Shortcuts")
         b_col1, b_col2 = st.columns(2)
         with b_col1:
             if st.button("💻 GitHub", use_container_width=True):
@@ -156,11 +191,11 @@ def show_sidebar() -> str:
         st.divider()
 
         # ============================================
-        # Vision AI & Image Understanding
+        # Vision AI Upload
         # ============================================
         st.subheader("📸 Vision AI & Image Upload")
         uploaded_image = st.file_uploader(
-            "Upload Image (Screenshot / Diagram / Doc)",
+            "Upload Image (Screenshot / Diagram)",
             type=["png", "jpg", "jpeg", "webp", "bmp"],
             key="vision_image_uploader",
         )
@@ -176,63 +211,47 @@ def show_sidebar() -> str:
             st.image(st.session_state.active_image, caption="📷 Active Vision Image", use_container_width=True)
 
             vision_mode = st.selectbox(
-                "🎯 Vision Analysis Mode",
+                "🎯 Vision Mode",
                 ["general", "screenshot", "diagram", "ocr"],
                 format_func=lambda x: {
-                    "general": "🔍 General Visual Understanding",
-                    "screenshot": "💻 Screenshot Explanation",
+                    "general": "🔍 General Visual QA",
+                    "screenshot": "💻 Screenshot Breakdown",
                     "diagram": "📐 Diagram & Architecture Flow",
-                    "ocr": "🔤 Optical Character Recognition (OCR)",
+                    "ocr": "🔤 Tesseract OCR",
                 }[x],
             )
             st.session_state.vision_mode = vision_mode
 
-            if st.button("🗑️ Clear Active Image", use_container_width=True):
+            if st.button("🗑️ Clear Image", use_container_width=True):
                 st.session_state.active_image = None
                 st.rerun()
 
         st.divider()
 
         # ============================================
-        # Initialize Documents Session State
+        # Multi-Doc PDF RAG Upload
         # ============================================
         if "documents" not in st.session_state:
             st.session_state.documents = []
 
-        # ============================================
-        # Upload PDFs
-        # ============================================
+        st.subheader("📄 Hybrid FAISS + BM25 RAG")
         uploaded_files = st.file_uploader(
-            "📄 Upload PDFs (Multi-Doc RAG)",
+            "Upload PDFs for RAG",
             type=["pdf"],
             accept_multiple_files=True,
         )
 
         if uploaded_files:
-            existing = {
-                doc["filename"]
-                for doc in st.session_state.documents
-            }
-
+            existing = {doc["filename"] for doc in st.session_state.documents}
             for file in uploaded_files:
                 if file.name in existing:
                     continue
 
                 with loading(f"{PDF_LOADING_MESSAGE} ({file.name})"):
-                    # 1. Read & Chunk Document
                     document = create_document(file)
+                    faiss_index, chunks = create_embeddings(document["chunks"])
+                    bm25_index = build_bm25_index(chunks)
 
-                    # 2. Build FAISS Cosine Index
-                    faiss_index, chunks = create_embeddings(
-                        document["chunks"]
-                    )
-
-                    # 3. Build BM25 Keyword Index
-                    bm25_index = build_bm25_index(
-                        chunks
-                    )
-
-                    # Store document & indexes
                     document["faiss_index"] = faiss_index
                     document["bm25_index"] = bm25_index
                     document["chunks"] = chunks
@@ -240,115 +259,60 @@ def show_sidebar() -> str:
 
                     st.session_state.documents.append(document)
 
-        # ============================================
-        # Uploaded Documents Status & PDF Image Extraction
-        # ============================================
-        st.subheader("📂 Uploaded Documents")
+        # Uploaded Documents Status
         documents = st.session_state.documents
-
         if documents:
             for i, doc in enumerate(documents):
                 with st.expander(f"📄 {doc['filename']}", expanded=False):
-                    st.write(f"Pages: {doc['pages']}")
-                    st.write(f"Chunks: {doc['chunk_count']}")
-
+                    st.write(f"Pages: {doc['pages']} | Chunks: {doc['chunk_count']}")
                     if doc.get("faiss_index") is not None:
-                        st.success("🧠 FAISS Cosine Index")
-
+                        st.success("🧠 FAISS Cosine Index Ready")
                     if doc.get("bm25_index") is not None:
-                        st.success("🔍 BM25 Keyword Index")
+                        st.success("🔍 BM25 Keyword Index Ready")
 
-                    st.info("⚡ RRF & Re-ranker Ready")
-
-                    # Extract PDF embedded images button
                     if doc.get("raw_file") and st.button("🖼️ Extract PDF Images", key=f"extract_img_{i}", use_container_width=True):
-                        with loading("Extracting raster images from PDF..."):
+                        with loading("Extracting raster images..."):
                             doc["raw_file"].seek(0)
                             pdf_imgs = extract_images_from_pdf(doc["raw_file"])
                             doc["extracted_images"] = pdf_imgs
-                            st.session_state[f"show_pdf_imgs_{i}"] = True
 
                     if doc.get("extracted_images"):
-                        st.markdown(f"**Found {len(doc['extracted_images'])} embedded images:**")
+                        st.markdown(f"**Extracted {len(doc['extracted_images'])} images:**")
                         for idx_img, record in enumerate(doc["extracted_images"][:3]):
-                            st.image(record["image"], caption=f"Page {record['page']} ({record['width']}x{record['height']})", use_container_width=True)
-                            if st.button(f"👁️ Analyze Image #{idx_img+1}", key=f"analyze_pdf_img_{i}_{idx_img}"):
+                            st.image(record["image"], caption=f"Page {record['page']}", use_container_width=True)
+                            if st.button(f"👁️ Analyze #{idx_img+1}", key=f"analyze_pdf_img_{i}_{idx_img}"):
                                 st.session_state.active_image = record["image"]
                                 st.session_state.vision_mode = "general"
                                 st.rerun()
 
-                    if st.button(
-                        "🗑 Remove",
-                        key=f"remove_{i}",
-                        use_container_width=True,
-                    ):
+                    if st.button("🗑 Remove", key=f"remove_{i}", use_container_width=True):
                         st.session_state.documents.pop(i)
                         st.rerun()
-        else:
-            st.info("No PDF uploaded.")
 
         st.divider()
 
         # ============================================
-        # Statistics
-        # ============================================
-        stats = get_document_statistics(documents)
-        st.subheader("📊 Document Intelligence")
-        st.write(f"Files: {stats['files']}")
-        st.write(f"Pages: {stats['pages']}")
-        st.write(f"Chunks: {stats['chunks']}")
-
-        st.divider()
-
-        # ============================================
-        # Session
-        # ============================================
-        st.subheader("💬 Session")
-        st.write(f"Messages: {len(st.session_state.get('messages', []))}")
-        st.write(f"Voice Mode: {response_mode}")
-
-        st.divider()
-
-        # ============================================
-        # Export Chat (JSON, Markdown, TXT)
+        # Export Transcript
         # ============================================
         from utils.exporters import export_chat_to_json, export_chat_to_markdown, export_chat_to_txt
 
         messages_list = st.session_state.get("messages", [])
-        st.write("**📥 Export Chat Transcript**")
+        st.subheader("📥 Export Transcript")
 
         exp_col1, exp_col2, exp_col3 = st.columns(3)
         with exp_col1:
-            st.download_button(
-                "📄 TXT",
-                export_chat_to_txt(messages_list),
-                file_name="nova_transcript.txt",
-                mime="text/plain",
-                use_container_width=True,
-            )
+            st.download_button("📄 TXT", export_chat_to_txt(messages_list), file_name="nova_transcript.txt", mime="text/plain", use_container_width=True)
         with exp_col2:
-            st.download_button(
-                "📝 MD",
-                export_chat_to_markdown(messages_list),
-                file_name="nova_transcript.md",
-                mime="text/markdown",
-                use_container_width=True,
-            )
+            st.download_button("📝 MD", export_chat_to_markdown(messages_list), file_name="nova_transcript.md", mime="text/markdown", use_container_width=True)
         with exp_col3:
-            st.download_button(
-                "📊 JSON",
-                export_chat_to_json(messages_list),
-                file_name="nova_transcript.json",
-                mime="application/json",
-                use_container_width=True,
-            )
+            st.download_button("📊 JSON", export_chat_to_json(messages_list), file_name="nova_transcript.json", mime="application/json", use_container_width=True)
 
         st.divider()
 
         # ============================================
-        # Clear Chat
+        # Clear Chat Button
         # ============================================
-        if st.button("🗑 Clear Chat", use_container_width=True):
+        if st.button("🗑 Clear Session", use_container_width=True):
             clear_messages()
             st.rerun()
 

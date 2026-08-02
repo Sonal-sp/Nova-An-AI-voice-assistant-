@@ -23,7 +23,7 @@ def display_response_card(
     metadata = result.get("metadata", {})
     citations = result.get("citations", [])
 
-    with st.chat_message("assistant"):
+    with st.chat_message("assistant", avatar="🤖"):
         # =====================================
         # Markdown + Code Blocks
         # =====================================
@@ -42,7 +42,7 @@ def display_response_card(
         # =====================================
         if citations:
             st.divider()
-            st.markdown("### 📚 Attributed Sources")
+            st.markdown("### 📚 Attributed Source Citations")
 
             seen_sources = set()
             for cit in citations:
@@ -56,21 +56,21 @@ def display_response_card(
                 score_pct = cit.get("score", 0.0)
                 snippet = cit.get("text", "")
 
-                badge_color = "#10B981" if score_pct >= 70 else "#F59E0B" if score_pct >= 45 else "#6B7280"
+                badge_color = "#10B981" if score_pct >= 70 else "#F59E0B" if score_pct >= 45 else "#64748B"
 
                 with st.expander(f"📄 **{doc_name}** — Page {page_num}", expanded=False):
                     st.markdown(
                         f"""
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-    <span><strong>Source Document:</strong> {doc_name}</span>
-    <span style="background-color:{badge_color}; color:white; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:bold;">
-        Match Score: {score_pct}%
-    </span>
-</div>
-<blockquote style="border-left: 3px solid #3B82F6; padding-left: 10px; margin: 4px 0; color: #D1D5DB; font-style: italic;">
-    {snippet}
-</blockquote>
-""",
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <span style="font-weight:600; color:#38BDF8;">📄 Document: {doc_name}</span>
+                            <span style="background:{badge_color}; color:white; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:700;">
+                                RRF Match: {score_pct}%
+                            </span>
+                        </div>
+                        <blockquote style="border-left: 3px solid #38BDF8; padding-left: 12px; margin: 6px 0; color: #CBD5E1; font-style: italic; background: rgba(30, 41, 59, 0.4); border-radius: 4px; padding-top: 6px; padding-bottom: 6px;">
+                            "{snippet}"
+                        </blockquote>
+                        """,
                         unsafe_allow_html=True,
                     )
 

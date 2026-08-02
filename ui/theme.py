@@ -4,54 +4,60 @@ from utils.settings import get_setting
 
 def apply_theme():
     """
-    Applies comprehensive custom CSS dynamic styling according to stored theme setting ('Dark', 'Light', 'Nova Cyberpunk').
-    Fixes component-level background, chat input container, and text color overrides.
+    Applies Nova's Futuristic AI Operating System Design System.
+    Combines Glassmorphism, Raycast/Claude Desktop minimal aesthetics,
+    cyberpunk neon gradients, custom scrollbars, and micro-animations.
     """
-    theme_name = get_setting("theme", "Dark")
+    theme_name = get_setting("theme", "Nova Cyberpunk")
 
     if theme_name == "Light":
         theme_css = """
         <style>
-            /* 1. Main App Container & Headers */
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+            html, body, [class*="st-"] {
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+            }
+
+            /* 1. Main App Container */
             .stApp, [data-testid="stAppViewContainer"], header[data-testid="stHeader"] {
-                background-color: #FFFFFF !important;
+                background: #F8FAFC !important;
                 color: #0F172A !important;
             }
 
             /* 2. Sidebar Container */
-            section[data-testid="stSidebar"], section[data-testid="stSidebar"] > div {
-                background-color: #FFFFFF !important;
+            section[data-testid="stSidebar"] {
+                background: #FFFFFF !important;
                 border-right: 1px solid #E2E8F0 !important;
+                box-shadow: 4px 0 24px rgba(0, 0, 0, 0.03) !important;
             }
             section[data-testid="stSidebar"] * {
                 color: #0F172A !important;
             }
 
-            /* 3. Typography & Text Elements */
-            h1, h2, h3, h4, h5, h6, p, label, span {
+            /* 3. Headers & Typography */
+            h1, h2, h3, h4, h5, h6 {
+                font-weight: 700 !important;
                 color: #0F172A !important;
+                letter-spacing: -0.02em !important;
             }
 
-            /* 4. Chat Messages & Cards */
+            /* 4. Chat Messages */
             [data-testid="stChatMessage"] {
-                background-color: #FFFFFF !important;
-                color: #0F172A !important;
+                background: #FFFFFF !important;
                 border: 1px solid #E2E8F0 !important;
-                border-radius: 12px !important;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+                border-radius: 16px !important;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04) !important;
+                margin-bottom: 12px !important;
+                transition: transform 0.2s ease, box-shadow 0.2s ease !important;
             }
-            [data-testid="stChatMessage"] * {
-                color: #0F172A !important;
+            [data-testid="stChatMessage"]:hover {
+                transform: translateY(-1px) !important;
+                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06) !important;
             }
 
-            /* 5. Comprehensive Bottom Chat Input Container & Inner Wrappers Fix */
-            [data-testid="stBottom"],
-            [data-testid="stBottom"] > div,
-            [data-testid="stBottom"] *,
-            [data-testid="stChatInputContainer"],
-            [data-testid="stChatInputContainer"] *,
-            div[class*="stBottom"],
-            div[class*="stBottom"] * {
+            /* 5. Bottom Chat Input */
+            [data-testid="stBottom"], [data-testid="stChatInputContainer"], [data-testid="stBottom"] * {
                 background-color: #FFFFFF !important;
                 color: #0F172A !important;
             }
@@ -60,177 +66,226 @@ def apply_theme():
             }
             [data-testid="stChatInput"] {
                 background-color: #FFFFFF !important;
-                border: 1px solid #CBD5E1 !important;
-                border-radius: 12px !important;
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
-            }
-            div[data-baseweb="base-input"],
-            div[data-baseweb="input"],
-            div[data-baseweb="textarea"] {
-                background-color: #FFFFFF !important;
-                color: #0F172A !important;
-            }
-            [data-testid="stChatInput"] textarea,
-            textarea[data-testid="stChatInputTextArea"] {
-                background-color: #FFFFFF !important;
-                color: #0F172A !important;
-            }
-            [data-testid="stChatInput"] textarea::placeholder,
-            textarea[data-testid="stChatInputTextArea"]::placeholder {
-                color: #64748B !important;
-            }
-            [data-testid="stChatInputSubmitButton"],
-            button[aria-label="Send message"],
-            button[data-testid="stChatInputSubmitButton"] {
-                background-color: #2563EB !important;
-                color: #FFFFFF !important;
-                border-radius: 8px !important;
-            }
-            [data-testid="stChatInputSubmitButton"] svg,
-            button[aria-label="Send message"] svg {
-                fill: #FFFFFF !important;
-                color: #FFFFFF !important;
-            }
-
-            /* 6. Expanders & Containers */
-            div[data-testid="stExpander"] {
-                background-color: #FFFFFF !important;
-                border: 1px solid #E2E8F0 !important;
-                border-radius: 8px !important;
-            }
-            div[data-testid="stExpander"] * {
-                color: #0F172A !important;
-            }
-
-            /* 7. Form Controls, Inputs & Selectboxes */
-            input, textarea, div[data-baseweb="select"] > div {
-                background-color: #FFFFFF !important;
-                color: #0F172A !important;
-                border-color: #CBD5E1 !important;
-            }
-
-            /* 8. Buttons */
-            .stButton > button {
-                background-color: #FFFFFF !important;
-                color: #2563EB !important;
-                border: 1px solid #CBD5E1 !important;
-                font-weight: 600 !important;
-            }
-            .stButton > button:hover {
-                background-color: #EFF6FF !important;
-                border-color: #2563EB !important;
-            }
-
-            /* 9. Tabs & Navigation */
-            button[data-baseweb="tab"] {
-                color: #475569 !important;
-            }
-            button[aria-selected="true"] {
-                color: #2563EB !important;
-                border-bottom-color: #2563EB !important;
-            }
-
-            /* 10. Metrics Cards */
-            [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {
-                color: #0F172A !important;
-            }
-
-            /* 11. Code & Pre Blocks */
-            code, pre {
-                background-color: #F1F5F9 !important;
-                color: #0F172A !important;
-                border: 1px solid #E2E8F0 !important;
-            }
-        </style>
-        """
-
-    elif theme_name == "Nova Cyberpunk":
-        theme_css = """
-        <style>
-            /* Cyberpunk Background & Header */
-            .stApp, [data-testid="stAppViewContainer"], header[data-testid="stHeader"] {
-                background: linear-gradient(135deg, #0B001A 0%, #1A0033 100%) !important;
-                color: #00F0FF !important;
-            }
-
-            /* Sidebar */
-            section[data-testid="stSidebar"] {
-                background-color: #0D0221 !important;
-                border-right: 1px solid #FF007F !important;
-            }
-            section[data-testid="stSidebar"] * {
-                color: #00F0FF !important;
-            }
-
-            /* Typography */
-            h1, h2, h3, h4, h5, h6, label, span {
-                color: #00F0FF !important;
-            }
-
-            /* Bottom Chat Input */
-            [data-testid="stBottom"], [data-testid="stChatInputContainer"], [data-testid="stBottom"] * {
-                background-color: #0D0221 !important;
-                border-top: 1px solid #FF007F !important;
-            }
-            [data-testid="stChatInput"] {
-                background-color: #16003B !important;
-                border: 1px solid #00F0FF !important;
-                box-shadow: 0 0 10px rgba(0, 240, 255, 0.3) !important;
+                border: 1.5px solid #CBD5E1 !important;
+                border-radius: 16px !important;
+                box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05) !important;
             }
             [data-testid="stChatInput"] textarea {
-                color: #00F0FF !important;
+                color: #0F172A !important;
             }
 
-            /* Expanders */
-            div[data-testid="stExpander"] {
-                background-color: #16003B !important;
-                border: 1px solid #00F0FF !important;
-                border-radius: 10px !important;
-                box-shadow: 0 0 10px rgba(0, 240, 255, 0.2) !important;
-            }
-
-            /* Buttons */
+            /* 6. Action Buttons */
             .stButton > button {
-                border: 1px solid #FF007F !important;
-                background-color: #240046 !important;
-                color: #00F0FF !important;
+                background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
+                color: #FFFFFF !important;
+                border: none !important;
+                border-radius: 12px !important;
+                font-weight: 600 !important;
+                box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25) !important;
+                transition: all 0.2s ease !important;
             }
             .stButton > button:hover {
-                background-color: #FF007F !important;
-                color: #FFFFFF !important;
+                transform: translateY(-1.5px) !important;
+                box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35) !important;
             }
 
-            /* Chat Messages */
-            [data-testid="stChatMessage"] {
-                background-color: #16003B !important;
-                border: 1px solid #FF007F !important;
-                color: #00F0FF !important;
+            /* 7. Metric Cards */
+            [data-testid="stMetric"] {
+                background: #FFFFFF !important;
+                border: 1px solid #E2E8F0 !important;
+                border-radius: 14px !important;
+                padding: 14px 18px !important;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03) !important;
             }
         </style>
         """
 
     else:
-        # Default Dark Mode
+        # Default AI OS Cyberpunk Glassmorphism
         theme_css = """
         <style>
-            .stApp, [data-testid="stAppViewContainer"], header[data-testid="stHeader"] {
-                background-color: #0E1117 !important;
-                color: #FAFAFA !important;
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+            :root {
+                --bg-deep: #07090E;
+                --bg-card: rgba(15, 23, 42, 0.65);
+                --bg-card-hover: rgba(30, 41, 59, 0.75);
+                --border-glass: rgba(255, 255, 255, 0.1);
+                --border-glow: rgba(56, 189, 248, 0.4);
+                --accent-blue: #38BDF8;
+                --accent-purple: #A855F7;
+                --accent-pink: #EC4899;
+                --accent-cyan: #22D3EE;
+                --text-primary: #F8FAFC;
+                --text-secondary: #94A3B8;
             }
-            [data-testid="stBottom"], [data-testid="stChatInputContainer"] {
-                background-color: #0E1117 !important;
-                border-top: 1px solid #1E293B !important;
+
+            html, body, [class*="st-"] {
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+            }
+
+            /* Sleek Custom Scrollbars */
+            ::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+            ::-webkit-scrollbar-track {
+                background: #07090E;
+            }
+            ::-webkit-scrollbar-thumb {
+                background: rgba(148, 163, 184, 0.2);
+                border-radius: 10px;
+            }
+            ::-webkit-scrollbar-thumb:hover {
+                background: rgba(56, 189, 248, 0.5);
+            }
+
+            /* 1. Main AI OS Deep Canvas */
+            .stApp, [data-testid="stAppViewContainer"], header[data-testid="stHeader"] {
+                background: radial-gradient(circle at 50% 0%, #111827 0%, #07090E 70%) !important;
+                color: var(--text-primary) !important;
+            }
+
+            /* 2. Glassmorphic Control Center Sidebar */
+            section[data-testid="stSidebar"] {
+                background: rgba(11, 15, 25, 0.85) !important;
+                backdrop-filter: blur(20px) saturate(180%) !important;
+                -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+                border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+                box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5) !important;
+            }
+            section[data-testid="stSidebar"] * {
+                color: var(--text-primary) !important;
+            }
+
+            /* 3. Typography & Gradient Headings */
+            h1, h2, h3 {
+                background: linear-gradient(135deg, #F8FAFC 0%, #38BDF8 50%, #A855F7 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                font-weight: 700 !important;
+                letter-spacing: -0.025em !important;
+            }
+            h4, h5, h6 {
+                color: var(--text-primary) !important;
+                font-weight: 600 !important;
+            }
+
+            /* 4. Chat Message Cards (ChatGPT / Claude Desktop Style) */
+            [data-testid="stChatMessage"] {
+                background: rgba(15, 23, 42, 0.6) !important;
+                backdrop-filter: blur(16px) saturate(180%) !important;
+                -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+                border: 1px solid rgba(255, 255, 255, 0.09) !important;
+                border-radius: 16px !important;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+                margin-bottom: 14px !important;
+                padding: 14px 18px !important;
+                transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease !important;
+            }
+            [data-testid="stChatMessage"]:hover {
+                transform: translateY(-2px) !important;
+                border-color: rgba(56, 189, 248, 0.3) !important;
+                box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 15px rgba(56, 189, 248, 0.15) !important;
+            }
+
+            /* 5. Raycast Floating Chat Input Command Bar */
+            [data-testid="stBottom"], [data-testid="stChatInputContainer"], [data-testid="stBottom"] * {
+                background: transparent !important;
             }
             [data-testid="stChatInput"] {
-                background-color: #1E293B !important;
-                border: 1px solid #334155 !important;
+                background: rgba(15, 23, 42, 0.85) !important;
+                backdrop-filter: blur(20px) saturate(180%) !important;
+                -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+                border: 1px solid rgba(56, 189, 248, 0.3) !important;
+                border-radius: 20px !important;
+                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.15) !important;
+                transition: all 0.3s ease !important;
+            }
+            [data-testid="stChatInput"]:focus-within {
+                border-color: var(--accent-blue) !important;
+                box-shadow: 0 14px 44px rgba(0, 0, 0, 0.7), 0 0 25px rgba(56, 189, 248, 0.35) !important;
             }
             [data-testid="stChatInput"] textarea {
                 color: #F8FAFC !important;
+                font-size: 15px !important;
             }
+            [data-testid="stChatInputSubmitButton"] button {
+                background: linear-gradient(135deg, #38BDF8 0%, #8B5CF6 100%) !important;
+                border-radius: 12px !important;
+                border: none !important;
+            }
+
+            /* 6. Cyberpunk Gradient Action Buttons */
+            .stButton > button {
+                background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%) !important;
+                color: var(--text-primary) !important;
+                border: 1px solid rgba(255, 255, 255, 0.12) !important;
+                border-radius: 12px !important;
+                padding: 8px 16px !important;
+                font-weight: 600 !important;
+                letter-spacing: 0.01em !important;
+                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+            }
+            .stButton > button:hover {
+                background: linear-gradient(135deg, #38BDF8 0%, #8B5CF6 100%) !important;
+                color: #FFFFFF !important;
+                border-color: transparent !important;
+                transform: translateY(-2px) scale(1.01) !important;
+                box-shadow: 0 8px 20px rgba(56, 189, 248, 0.35) !important;
+            }
+
+            /* 7. Metric Intelligence Cards */
+            [data-testid="stMetric"] {
+                background: rgba(15, 23, 42, 0.6) !important;
+                backdrop-filter: blur(16px) !important;
+                border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                border-radius: 16px !important;
+                padding: 16px 20px !important;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+                transition: transform 0.2s ease !important;
+            }
+            [data-testid="stMetric"]:hover {
+                transform: translateY(-2px) !important;
+                border-color: rgba(56, 189, 248, 0.3) !important;
+            }
+            [data-testid="stMetricValue"] {
+                color: var(--accent-cyan) !important;
+                font-weight: 700 !important;
+                font-family: 'JetBrains Mono', monospace !important;
+            }
+
+            /* 8. Expanders & Accordions */
             div[data-testid="stExpander"] {
-                background-color: #1E293B !important;
-                border-radius: 8px !important;
+                background: rgba(15, 23, 42, 0.5) !important;
+                backdrop-filter: blur(14px) !important;
+                border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                border-radius: 14px !important;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+            }
+
+            /* 9. Sleek Code Blocks */
+            code, pre {
+                background: #0B0F19 !important;
+                color: #38BDF8 !important;
+                border: 1px solid rgba(255, 255, 255, 0.1) !important;
+                border-radius: 10px !important;
+                font-family: 'JetBrains Mono', monospace !important;
+            }
+
+            /* 10. Floating Pill Badges */
+            .nova-badge {
+                display: inline-flex;
+                align-items: center;
+                padding: 4px 10px;
+                border-radius: 20px;
+                font-size: 11px;
+                font-weight: 600;
+                background: rgba(56, 189, 248, 0.15);
+                color: #38BDF8;
+                border: 1px solid rgba(56, 189, 248, 0.3);
+                letter-spacing: 0.03em;
             }
         </style>
         """
