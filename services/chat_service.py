@@ -42,6 +42,8 @@ from services.url_service import extract_text_from_url
 from services.rag_service import retrieve_advanced_rag_context
 from services.vision_service import analyze_image_with_vision, extract_text_ocr
 from utils.settings import get_setting
+from utils.security import sanitize_input
+from utils.errors import safe_execute
 
 logger = logging.getLogger(__name__)
 
@@ -55,23 +57,25 @@ def process_chat(
 ) -> Optional[Dict[str, Any]]:
     """
     Processes user query through Nova's complete intelligence pipeline:
-    1. Vision AI & Image Understanding (if active image attached)
-    2. Desktop Automation Commands (Launch Apps, Explorer, Search Files, Clipboard, Stats)
-    3. Desktop Productivity Suite Commands (Notes, Tasks, Calendar, Reminders)
-    4. Browser Desktop Assistant (Open Websites, Google/YouTube/Maps Search)
-    5. Multi-document Advanced RAG (FAISS + BM25 + RRF + Re-ranking using configurable Top-K)
-    6. URL Text Extraction
-    7. Web Search
-    8. Gemini LLM synthesis
+    1. Input sanitization & security check
+    2. Vision AI & Image Understanding (if active image attached)
+    3. Desktop Automation Commands
+    4. Desktop Productivity Suite Commands
+    5. Browser Desktop Assistant
+    6. Multi-document Advanced RAG (Cached Embeddings & Re-ranking)
+    7. URL Text Extraction
+    8. Web Search
+    9. Gemini LLM synthesis
     """
-    if not user_prompt or not user_prompt.strip():
+    clean_prompt = sanitize_input(user_prompt)
+    if not clean_prompt:
         return None
 
     start_time = time.perf_counter()
 
     # Save user prompt to conversation memory
     if save_user:
-        add_message("user", user_prompt)
+        add_message("user", clean_prompt)
 
     # ==========================================================
     # 1. Vision AI Analysis (Active Image attached)
@@ -88,7 +92,7 @@ def process_chat(
         else:
             response_text = analyze_image_with_vision(
                 image=active_image,
-                prompt=user_prompt,
+                prompt=clean_prompt,
                 analysis_type=vision_mode,
             )
             used_ocr = False
@@ -115,7 +119,7 @@ def process_chat(
     # ==========================================================
     # 2. Desktop System Automation Commands
     # ==========================================================
-    desktop_intent = detect_desktop_intent(user_prompt)
+    desktop_intent = detect_desktop_intent(clean_prompt)
     if desktop_intent:
         logger.info(f"Desktop intent detected: {desktop_intent}")
         act = desktop_intent["action_type"]
@@ -172,7 +176,7 @@ def process_chat(
     # ==========================================================
     # 3. Desktop Productivity Commands Check
     # ==========================================================
-    prod_intent = detect_productivity_intent(user_prompt)
+    prod_intent = detect_productivity_intent(clean_prompt)
     if prod_intent:
         logger.info(f"Productivity intent detected: {prod_intent}")
         act = prod_intent["action_type"]
@@ -260,7 +264,7 @@ def process_chat(
     # ==========================================================
     # 4. Desktop Browser Assistant Check
     # ==========================================================
-    browser_intent = detect_browser_intent(user_prompt)
+    browser_intent = detect_browser_intent(clean_prompt)
     if browser_intent:
         logger.info(f"Browser intent detected: {browser_intent}")
         browser_res = execute_browser_action(
@@ -295,7 +299,7 @@ def process_chat(
     rag_confidence = {"score": 0.0, "level": "N/A"}
 
     # ==========================================================
-    # 5. Advanced Multi-Document RAG (FAISS + BM25 + RRF + Re-ranking using Dynamic Top-K)
+    # 5. Advanced Multi-Document RAG (FAISS + BM25 + RRF + Re-ranking)
     # ==========================================================
     documents = st.session_state.get("documents", [])
     if documents:
@@ -303,7 +307,7 @@ def process_chat(
             rag_top_k = get_setting("rag_top_k", 4)
             rag_output = retrieve_advanced_rag_context(
                 documents=documents,
-                query=user_prompt,
+                query=clean_prompt,
                 top_k=rag_top_k,
             )
             document_context = rag_output.get("document_context")
@@ -315,7 +319,7 @@ def process_chat(
     # ==========================================================
     # 6. URL Reader
     # ==========================================================
-    url = extract_url(user_prompt)
+    url = extract_url(clean_prompt)
     if url:
         try:
             webpage = extract_text_from_url(url)
@@ -327,9 +331,9 @@ def process_chat(
     # ==========================================================
     # 7. Web Search
     # ==========================================================
-    if should_search_web(user_prompt):
+    if should_search_web(clean_prompt):
         try:
-            results = search_web(user_prompt)
+            results = search_web(clean_prompt)
             if results:
                 web_context = format_search_results(results)
         except Exception as e:

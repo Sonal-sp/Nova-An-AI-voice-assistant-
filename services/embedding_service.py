@@ -1,20 +1,30 @@
 import logging
 from typing import List, Dict, Any, Tuple, Optional
+import streamlit as st
 from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
+
 # ==========================================================
-# Load Embedding Model (Loads only once)
+# Cached Model Loader
 # ==========================================================
+@st.cache_resource(show_spinner=False)
+def get_embedding_model() -> SentenceTransformer:
+    """
+    Loads and caches the SentenceTransformer model to prevent redundant reloads.
+    """
+    logger.info("Loading SentenceTransformer model 'all-MiniLM-L6-v2'...")
+    return SentenceTransformer("all-MiniLM-L6-v2")
+
+
 try:
-    model: SentenceTransformer = SentenceTransformer("all-MiniLM-L6-v2")
-    logger.info("SentenceTransformer model 'all-MiniLM-L6-v2' loaded successfully.")
+    model: SentenceTransformer = get_embedding_model()
 except Exception as e:
     logger.error(f"Failed to load SentenceTransformer model: {e}")
-    raise e
+    model = None
 
 
 # ==========================================================
@@ -23,25 +33,19 @@ except Exception as e:
 def create_embeddings(chunks: List[Dict[str, Any]]) -> Tuple[Optional[faiss.IndexFlatIP], List[Dict[str, Any]]]:
     """
     Creates L2-normalized FAISS IndexFlatIP embeddings for document chunks.
-
-    Parameters
-    ----------
-    chunks : List[Dict[str, Any]]
-        List of chunk dictionaries containing 'text', 'page', 'chunk_id'.
-
-    Returns
-    -------
-    Tuple[Optional[faiss.IndexFlatIP], List[Dict[str, Any]]]
-        FAISS IndexFlatIP instance and original chunk objects.
     """
     if not chunks:
         logger.warning("Empty chunks provided to create_embeddings.")
         return None, []
 
+    emb_model = get_embedding_model()
+    if emb_model is None:
+        return None, chunks
+
     try:
         texts = [chunk["text"] for chunk in chunks]
 
-        embeddings = model.encode(
+        embeddings = emb_model.encode(
             texts,
             convert_to_numpy=True,
             show_progress_bar=False,
@@ -73,28 +77,16 @@ def search_similar_chunks(
 ) -> List[Dict[str, Any]]:
     """
     Returns top matching chunk dictionaries enriched with cosine similarity score.
-
-    Parameters
-    ----------
-    question : str
-        Search query string.
-    index : Optional[faiss.IndexFlatIP]
-        FAISS index object.
-    chunks : List[Dict[str, Any]]
-        Original list of chunk dictionaries.
-    top_k : int
-        Number of top matches to retrieve.
-
-    Returns
-    -------
-    List[Dict[str, Any]]
-        List of chunk dictionaries with attached 'score' (cosine similarity 0.0 - 1.0).
     """
     if index is None or not chunks or not question.strip():
         return []
 
+    emb_model = get_embedding_model()
+    if emb_model is None:
+        return []
+
     try:
-        query_embedding = model.encode(
+        query_embedding = emb_model.encode(
             [question],
             convert_to_numpy=True,
         ).astype(np.float32)
@@ -112,7 +104,6 @@ def search_similar_chunks(
         for raw_score, idx in zip(scores[0], indices[0]):
             if 0 <= idx < len(chunks):
                 chunk_copy = dict(chunks[idx])
-                # Cosine similarity bounds clipped to [0.0, 1.0]
                 similarity = max(0.0, min(1.0, float(raw_score)))
                 chunk_copy["score"] = similarity
                 chunk_copy["vector_score"] = similarity
