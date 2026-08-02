@@ -1,8 +1,14 @@
 import time
 import os
 import logging
+from typing import Optional
 import numpy as np
-import sounddevice as sd
+
+try:
+    import sounddevice as sd
+except ImportError:
+    sd = None
+
 from scipy.io.wavfile import write
 
 logger = logging.getLogger(__name__)
@@ -33,6 +39,10 @@ def record_audio(
     Optional[str]
         Path to saved recording WAV file or None on error.
     """
+    if sd is None:
+        logger.warning("sounddevice module is not available on host system.")
+        return None
+
     try:
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         logger.info(f"Starting audio recording for {duration} seconds...")

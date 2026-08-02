@@ -121,16 +121,6 @@ python -m tests.test_master_production_suite
 
 ---
 
-## 💼 Resume & Interview Bullet Points
-
-- **Architected Nova**, a production-grade AI Voice & Desktop Intelligence Platform integrating Google Gemini 2.5, FAISS vector search, and Ollama local LLMs.
-- **Engineered a Multi-Document RAG pipeline** combining FAISS dense cosine search, BM25 sparse keyword search, Reciprocal Rank Fusion (RRF), and CrossEncoder re-ranking with `@st.cache_resource` latency optimizations (~0.03ms retrieval).
-- **Implemented a real-time Voice Command Engine** supporting hands-free auto-listening, "Hey Nova" wake-word detection, and CSS-animated audio waveform visualizers.
-- **Integrated Desktop & Cloud Automation** enabling OS application controls (VS Code, Spotify, Chrome) and REST API workflows for GitHub, Gmail, Google Drive, Google Calendar, Notion, Slack, and Discord.
-- **Containerized the platform with Docker & GitHub Actions CI/CD**, establishing automated build checks, structured logging, and SQLite analytics tracking.
-
----
-
 ## 📜 License
 Distributed under the MIT License. See `LICENSE` for more information.
 
@@ -138,4 +128,5 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ## Developed By 
 Sonal Shailesh Parmar 
+
 Computer Engineering | Artificial Intelligence 

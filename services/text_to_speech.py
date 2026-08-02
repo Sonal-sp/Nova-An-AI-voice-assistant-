@@ -1,6 +1,6 @@
 import logging
+from typing import Optional
 import edge_tts
-from playsound3 import playsound
 from utils.settings import get_setting
 
 logger = logging.getLogger(__name__)
@@ -10,7 +10,7 @@ async def text_to_speech(
     text: str,
     output_file: str = "temp/speech.mp3",
     voice: str = None,
-):
+) -> Optional[str]:
     """
     Convert text into speech and save it as an MP3 using dynamic settings.
 
@@ -20,7 +20,7 @@ async def text_to_speech(
         voice (str): Optional voice override.
 
     Returns:
-        str | None: Path of the generated audio file if successful, otherwise None.
+        Optional[str]: Path of the generated audio file if successful, otherwise None.
     """
     try:
         # Determine voice from settings if not explicitly provided
@@ -40,7 +40,14 @@ async def text_to_speech(
         )
 
         await communicate.save(output_file)
-        playsound(output_file)
+
+        # Attempt optional audio playback if audio drivers are present
+        try:
+            from playsound3 import playsound
+            playsound(output_file)
+        except Exception as play_err:
+            logger.debug(f"Audio playback skipped: {play_err}")
+
         logger.info(f"TTS generated speech with voice='{voice}', rate='{rate_str}'.")
         return output_file
 
