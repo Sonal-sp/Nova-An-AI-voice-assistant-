@@ -45,6 +45,15 @@ def show_sidebar() -> str:
         st.divider()
 
         # ============================================
+        # Productivity Suite Toggle
+        # ============================================
+        st.subheader("⚡ Productivity Suite")
+        show_prod = st.toggle("Show Productivity Dashboard", value=st.session_state.get("show_prod_dashboard", False))
+        st.session_state.show_prod_dashboard = show_prod
+
+        st.divider()
+
+        # ============================================
         # Quick Web Launcher
         # ============================================
         st.subheader("🌐 Quick Browser Launch")

@@ -10,8 +10,19 @@ from services.memory import (
     remove_last_assistant_message,
 )
 from services.assistant import get_assistant_response
-from services.intent_detector import should_search_web, detect_browser_intent
+from services.intent_detector import should_search_web, detect_browser_intent, detect_productivity_intent
 from services.browser_service import execute_browser_action
+from services.productivity_service import (
+    add_note,
+    get_all_notes,
+    add_todo,
+    get_all_todos,
+    add_event,
+    get_all_events,
+    add_reminder,
+    get_all_reminders,
+    get_daily_planner_summary,
+)
 from services.web_search import search_web, format_search_results
 from services.url_detector import extract_url
 from services.url_service import extract_text_from_url
@@ -30,12 +41,13 @@ def process_chat(
 ) -> Optional[Dict[str, Any]]:
     """
     Processes user query through Nova's complete intelligence pipeline:
-    1. Vision AI & Image Understanding (if active image uploaded)
-    2. Browser Desktop Assistant (Open Websites, Google/YouTube/Maps Search)
-    3. Multi-document Advanced RAG (FAISS + BM25 + RRF + Re-ranking)
-    4. URL Text Extraction
-    5. Web Search
-    6. Gemini LLM synthesis
+    1. Vision AI & Image Understanding (if active image attached)
+    2. Desktop Productivity Suite Commands
+    3. Browser Desktop Assistant (Open Websites, Google/YouTube/Maps Search)
+    4. Multi-document Advanced RAG (FAISS + BM25 + RRF + Re-ranking)
+    5. URL Text Extraction
+    6. Web Search
+    7. Gemini LLM synthesis
     """
     if not user_prompt or not user_prompt.strip():
         return None
@@ -86,7 +98,95 @@ def process_chat(
         }
 
     # ==========================================================
-    # 2. Desktop Browser Assistant Check
+    # 2. Desktop Productivity Commands Check
+    # ==========================================================
+    prod_intent = detect_productivity_intent(user_prompt)
+    if prod_intent:
+        logger.info(f"Productivity intent detected: {prod_intent}")
+        act = prod_intent["action_type"]
+        response_text = ""
+
+        if act == "show_planner":
+            planner_data = get_daily_planner_summary()
+            response_text = planner_data["summary_markdown"]
+
+        elif act == "create_note":
+            res = add_note(prod_intent["title"], prod_intent["content"])
+            response_text = f"📝 Saved Note **'{res['title']}'** to database."
+
+        elif act == "show_notes":
+            notes = get_all_notes()
+            if notes:
+                lines = ["### 📋 Saved Notes\n"]
+                for n in notes:
+                    lines.append(f"- 📝 **{n['title']}**: {n['content']}")
+                response_text = "\n".join(lines)
+            else:
+                response_text = "📋 No saved notes found."
+
+        elif act == "create_todo":
+            res = add_todo(prod_intent["task"], priority=prod_intent.get("priority", "Medium"))
+            response_text = f"✅ Added Task **'{res['task']}'** `[{res['priority']}]` to checklist."
+
+        elif act == "show_todos":
+            todos = get_all_todos()
+            if todos:
+                lines = ["### ✅ To-do Checklist\n"]
+                for t in todos:
+                    st_icon = "☑️" if t["status"] == "completed" else "🔲"
+                    lines.append(f"- {st_icon} `[{t['priority']}]` **{t['task']}** (Due: {t['due_date']})")
+                response_text = "\n".join(lines)
+            else:
+                response_text = "✅ No tasks in checklist."
+
+        elif act == "create_event":
+            res = add_event(prod_intent["title"], prod_intent["start_time"])
+            response_text = f"📅 Scheduled Event **'{res['title']}'** for `{res['start_time']}`."
+
+        elif act == "show_calendar":
+            events = get_all_events()
+            if events:
+                lines = ["### 📅 Scheduled Events\n"]
+                for e in events:
+                    lines.append(f"- 🕒 **{e['start_time']}**: {e['title']}")
+                response_text = "\n".join(lines)
+            else:
+                response_text = "📅 No calendar events scheduled."
+
+        elif act == "create_reminder":
+            res = add_reminder(prod_intent["reminder_text"], prod_intent["remind_at"])
+            response_text = f"🔔 Set Reminder **'{res['reminder_text']}'** (`{res['remind_at']}`)."
+
+        elif act == "show_reminders":
+            rems = get_all_reminders()
+            if rems:
+                lines = ["### 🔔 Active Reminders\n"]
+                for r in rems:
+                    lines.append(f"- 🔔 **{r['reminder_text']}** (`{r['remind_at']}`)")
+                response_text = "\n".join(lines)
+            else:
+                response_text = "🔔 No active reminders set."
+
+        if response_text:
+            add_message("assistant", response_text)
+            elapsed = round(time.perf_counter() - start_time, 2)
+            return {
+                "text": response_text,
+                "metadata": {
+                    "response_time": elapsed,
+                    "model": "Nova Productivity Engine",
+                    "used_pdf": False,
+                    "used_web": False,
+                    "used_url": False,
+                    "used_browser": False,
+                    "used_productivity": True,
+                    "confidence": {"score": 100.0, "level": "High"},
+                },
+                "citations": [],
+            }
+
+    # ==========================================================
+    # 3. Desktop Browser Assistant Check
     # ==========================================================
     browser_intent = detect_browser_intent(user_prompt)
     if browser_intent:
@@ -123,7 +223,7 @@ def process_chat(
     rag_confidence = {"score": 0.0, "level": "N/A"}
 
     # ==========================================================
-    # 3. Advanced Multi-Document RAG (FAISS + BM25 + RRF + Re-ranking)
+    # 4. Advanced Multi-Document RAG (FAISS + BM25 + RRF + Re-ranking)
     # ==========================================================
     documents = st.session_state.get("documents", [])
     if documents:
@@ -140,7 +240,7 @@ def process_chat(
             logger.error(f"Failed during Advanced RAG processing: {e}")
 
     # ==========================================================
-    # 4. URL Reader
+    # 5. URL Reader
     # ==========================================================
     url = extract_url(user_prompt)
     if url:
@@ -152,7 +252,7 @@ def process_chat(
             logger.warning(f"Error fetching URL content: {e}")
 
     # ==========================================================
-    # 5. Web Search
+    # 6. Web Search
     # ==========================================================
     if should_search_web(user_prompt):
         try:
@@ -163,7 +263,7 @@ def process_chat(
             logger.warning(f"Error executing web search: {e}")
 
     # ==========================================================
-    # 6. Gemini Synthesis
+    # 7. Gemini Synthesis
     # ==========================================================
     assistant_response = get_assistant_response(
         messages=get_messages(),

@@ -11,12 +11,12 @@ from ui.sidebar import show_sidebar
 from ui.welcome import show_welcome
 from ui.chat import display_chat
 from ui.input import get_user_input
+from ui.productivity_ui import render_productivity_dashboard
 
 from utils.constants import THINKING_MESSAGE
 
 
 # Page Configuration
-
 st.set_page_config(
     page_title="Nova",
     page_icon="🤖",
@@ -34,6 +34,11 @@ response_mode = show_sidebar()
 # Header
 st.title("🤖 Nova")
 st.caption("Your Personal AI Assistant powered by Gemini")
+
+# Productivity Dashboard View (if toggled in sidebar)
+if st.session_state.get("show_prod_dashboard", False):
+    render_productivity_dashboard()
+    st.divider()
 
 # Welcome Screen
 show_welcome()
