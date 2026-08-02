@@ -14,12 +14,12 @@ def apply_theme():
         <style>
             /* 1. Main App Container & Headers */
             .stApp, [data-testid="stAppViewContainer"], header[data-testid="stHeader"] {
-                background-color: #F8FAFC !important;
+                background-color: #FFFFFF !important;
                 color: #0F172A !important;
             }
 
             /* 2. Sidebar Container */
-            section[data-testid="stSidebar"] {
+            section[data-testid="stSidebar"], section[data-testid="stSidebar"] > div {
                 background-color: #FFFFFF !important;
                 border-right: 1px solid #E2E8F0 !important;
             }
@@ -44,9 +44,18 @@ def apply_theme():
                 color: #0F172A !important;
             }
 
-            /* 5. Bottom Chat Input Container & Text Box Fix */
-            [data-testid="stBottom"], [data-testid="stChatInputContainer"] {
-                background-color: #F8FAFC !important;
+            /* 5. Comprehensive Bottom Chat Input Container & Inner Wrappers Fix */
+            [data-testid="stBottom"],
+            [data-testid="stBottom"] > div,
+            [data-testid="stBottom"] *,
+            [data-testid="stChatInputContainer"],
+            [data-testid="stChatInputContainer"] *,
+            div[class*="stBottom"],
+            div[class*="stBottom"] * {
+                background-color: #FFFFFF !important;
+                color: #0F172A !important;
+            }
+            [data-testid="stBottom"] {
                 border-top: 1px solid #E2E8F0 !important;
             }
             [data-testid="stChatInput"] {
@@ -55,17 +64,32 @@ def apply_theme():
                 border-radius: 12px !important;
                 box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
             }
-            [data-testid="stChatInput"] textarea {
+            div[data-baseweb="base-input"],
+            div[data-baseweb="input"],
+            div[data-baseweb="textarea"] {
                 background-color: #FFFFFF !important;
                 color: #0F172A !important;
             }
-            [data-testid="stChatInput"] textarea::placeholder {
+            [data-testid="stChatInput"] textarea,
+            textarea[data-testid="stChatInputTextArea"] {
+                background-color: #FFFFFF !important;
+                color: #0F172A !important;
+            }
+            [data-testid="stChatInput"] textarea::placeholder,
+            textarea[data-testid="stChatInputTextArea"]::placeholder {
                 color: #64748B !important;
             }
-            [data-testid="stChatInputSubmitButton"] {
+            [data-testid="stChatInputSubmitButton"],
+            button[aria-label="Send message"],
+            button[data-testid="stChatInputSubmitButton"] {
                 background-color: #2563EB !important;
                 color: #FFFFFF !important;
                 border-radius: 8px !important;
+            }
+            [data-testid="stChatInputSubmitButton"] svg,
+            button[aria-label="Send message"] svg {
+                fill: #FFFFFF !important;
+                color: #FFFFFF !important;
             }
 
             /* 6. Expanders & Containers */
@@ -144,7 +168,7 @@ def apply_theme():
             }
 
             /* Bottom Chat Input */
-            [data-testid="stBottom"], [data-testid="stChatInputContainer"] {
+            [data-testid="stBottom"], [data-testid="stChatInputContainer"], [data-testid="stBottom"] * {
                 background-color: #0D0221 !important;
                 border-top: 1px solid #FF007F !important;
             }
