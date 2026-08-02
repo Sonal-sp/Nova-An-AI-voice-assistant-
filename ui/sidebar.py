@@ -46,10 +46,13 @@ def show_sidebar() -> str:
         st.divider()
 
         # ============================================
-        # Productivity Suite Toggle
+        # Settings & Productivity Toggles
         # ============================================
-        st.subheader("⚡ Productivity Suite")
-        show_prod = st.toggle("Show Productivity Dashboard", value=st.session_state.get("show_prod_dashboard", False))
+        st.subheader("⚙️ Control Center")
+        show_settings = st.toggle("Settings & System Health", value=st.session_state.get("show_settings_dashboard", False))
+        st.session_state.show_settings_dashboard = show_settings
+
+        show_prod = st.toggle("Productivity Dashboard", value=st.session_state.get("show_prod_dashboard", False))
         st.session_state.show_prod_dashboard = show_prod
 
         st.divider()
@@ -74,7 +77,7 @@ def show_sidebar() -> str:
                 res = launch_app("calc")
                 st.toast(res["message"])
 
-        if st.button("📊 System Diagnostics", use_container_width=True):
+        if st.button("📊 Quick Diagnostics", use_container_width=True):
             diag = get_system_diagnostics()
             st.info(diag["summary_markdown"])
 

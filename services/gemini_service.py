@@ -7,6 +7,7 @@ import traceback
 from PIL import Image
 
 from config import GEMINI_MODEL, SYSTEM_PROMPT
+from utils.settings import get_setting
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -18,12 +19,18 @@ client = genai.Client(
 
 def ask_gemini(conversation: List[Any]) -> str:
     """
-    Sends conversational messages to Gemini model.
+    Sends conversational messages to Gemini model using dynamic settings for model and temperature.
     """
     try:
+        model_name = get_setting("default_model", GEMINI_MODEL)
+        temperature = float(get_setting("temperature", 0.7))
+
         response = client.models.generate_content(
-            model=GEMINI_MODEL,
+            model=model_name,
             contents=conversation,
+            config=genai.types.GenerateContentConfig(
+                temperature=temperature,
+            ),
         )
         return response.text
 
@@ -35,23 +42,12 @@ def ask_gemini(conversation: List[Any]) -> str:
 def ask_gemini_vision(image: Image.Image, prompt: str) -> str:
     """
     Sends a PIL Image object and prompt to Gemini Multimodal Vision API.
-
-    Parameters
-    ----------
-    image : Image.Image
-        PIL Image object.
-    prompt : str
-        User prompt string.
-
-    Returns
-    -------
-    str
-        Vision model analysis text.
     """
     try:
+        model_name = get_setting("default_model", GEMINI_MODEL)
         user_prompt = prompt.strip() if prompt else "Describe and analyze this image in detail."
         response = client.models.generate_content(
-            model=GEMINI_MODEL,
+            model=model_name,
             contents=[image, user_prompt],
         )
         return response.text

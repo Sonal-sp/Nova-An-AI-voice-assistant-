@@ -41,6 +41,7 @@ from services.url_detector import extract_url
 from services.url_service import extract_text_from_url
 from services.rag_service import retrieve_advanced_rag_context
 from services.vision_service import analyze_image_with_vision, extract_text_ocr
+from utils.settings import get_setting
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +59,7 @@ def process_chat(
     2. Desktop Automation Commands (Launch Apps, Explorer, Search Files, Clipboard, Stats)
     3. Desktop Productivity Suite Commands (Notes, Tasks, Calendar, Reminders)
     4. Browser Desktop Assistant (Open Websites, Google/YouTube/Maps Search)
-    5. Multi-document Advanced RAG (FAISS + BM25 + RRF + Re-ranking)
+    5. Multi-document Advanced RAG (FAISS + BM25 + RRF + Re-ranking using configurable Top-K)
     6. URL Text Extraction
     7. Web Search
     8. Gemini LLM synthesis
@@ -294,15 +295,16 @@ def process_chat(
     rag_confidence = {"score": 0.0, "level": "N/A"}
 
     # ==========================================================
-    # 5. Advanced Multi-Document RAG (FAISS + BM25 + RRF + Re-ranking)
+    # 5. Advanced Multi-Document RAG (FAISS + BM25 + RRF + Re-ranking using Dynamic Top-K)
     # ==========================================================
     documents = st.session_state.get("documents", [])
     if documents:
         try:
+            rag_top_k = get_setting("rag_top_k", 4)
             rag_output = retrieve_advanced_rag_context(
                 documents=documents,
                 query=user_prompt,
-                top_k=4,
+                top_k=rag_top_k,
             )
             document_context = rag_output.get("document_context")
             citations = rag_output.get("citations", [])

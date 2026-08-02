@@ -12,6 +12,8 @@ from ui.welcome import show_welcome
 from ui.chat import display_chat
 from ui.input import get_user_input
 from ui.productivity_ui import render_productivity_dashboard
+from ui.settings_ui import render_settings_dashboard
+from ui.theme import apply_theme
 
 from utils.constants import THINKING_MESSAGE
 
@@ -23,10 +25,11 @@ st.set_page_config(
     layout="centered",
 )
 
+# Apply Dynamic UI Theme
+apply_theme()
 
 # Initialize Session
 initialize_memory()
-
 
 # Sidebar
 response_mode = show_sidebar()
@@ -34,6 +37,11 @@ response_mode = show_sidebar()
 # Header
 st.title("🤖 Nova")
 st.caption("Your Personal AI Assistant powered by Gemini")
+
+# Settings & System Health View (if toggled in sidebar)
+if st.session_state.get("show_settings_dashboard", False):
+    render_settings_dashboard()
+    st.divider()
 
 # Productivity Dashboard View (if toggled in sidebar)
 if st.session_state.get("show_prod_dashboard", False):
