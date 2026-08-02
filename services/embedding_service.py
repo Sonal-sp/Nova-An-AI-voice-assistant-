@@ -1,106 +1,125 @@
+import logging
+from typing import List, Dict, Any, Tuple, Optional
 from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
 
+logger = logging.getLogger(__name__)
+
 # ==========================================================
 # Load Embedding Model (Loads only once)
 # ==========================================================
-model = SentenceTransformer(
-    "all-MiniLM-L6-v2"
-)
+try:
+    model: SentenceTransformer = SentenceTransformer("all-MiniLM-L6-v2")
+    logger.info("SentenceTransformer model 'all-MiniLM-L6-v2' loaded successfully.")
+except Exception as e:
+    logger.error(f"Failed to load SentenceTransformer model: {e}")
+    raise e
 
 
 # ==========================================================
-# Create Embeddings
+# Create Embeddings (Cosine Similarity with IndexFlatIP)
 # ==========================================================
-def create_embeddings(chunks):
+def create_embeddings(chunks: List[Dict[str, Any]]) -> Tuple[Optional[faiss.IndexFlatIP], List[Dict[str, Any]]]:
     """
-    Creates FAISS embeddings for document chunks.
+    Creates L2-normalized FAISS IndexFlatIP embeddings for document chunks.
 
     Parameters
     ----------
-    chunks : list
-        List of chunk dictionaries.
+    chunks : List[Dict[str, Any]]
+        List of chunk dictionaries containing 'text', 'page', 'chunk_id'.
 
     Returns
     -------
-    index
-        FAISS index
-
-    chunks
-        Original chunk objects
+    Tuple[Optional[faiss.IndexFlatIP], List[Dict[str, Any]]]
+        FAISS IndexFlatIP instance and original chunk objects.
     """
-
     if not chunks:
+        logger.warning("Empty chunks provided to create_embeddings.")
         return None, []
 
-    # ---------------------------------------
-    # Embed ONLY the chunk text
-    # ---------------------------------------
-    texts = [
-        chunk["text"]
-        for chunk in chunks
-    ]
+    try:
+        texts = [chunk["text"] for chunk in chunks]
 
-    embeddings = model.encode(
-        texts,
-        convert_to_numpy=True,
-        show_progress_bar=False,
-    ).astype(np.float32)
+        embeddings = model.encode(
+            texts,
+            convert_to_numpy=True,
+            show_progress_bar=False,
+        ).astype(np.float32)
 
-    dimension = embeddings.shape[1]
+        # Normalize vectors for Cosine Similarity via Inner Product Index
+        faiss.normalize_L2(embeddings)
 
-    index = faiss.IndexFlatL2(
-        dimension
-    )
+        dimension = embeddings.shape[1]
+        index = faiss.IndexFlatIP(dimension)
+        index.add(embeddings)
 
-    index.add(embeddings)
+        logger.info(f"Successfully created FAISS IndexFlatIP with {len(chunks)} vectors.")
+        return index, chunks
 
-    return index, chunks
+    except Exception as e:
+        logger.error(f"Error creating FAISS embeddings: {e}")
+        return None, chunks
 
 
 # ==========================================================
-# Semantic Search
+# Semantic Search with Cosine Similarity Scores
 # ==========================================================
 def search_similar_chunks(
-    question,
-    index,
-    chunks,
-    top_k=3,
-):
+    question: str,
+    index: Optional[faiss.IndexFlatIP],
+    chunks: List[Dict[str, Any]],
+    top_k: int = 5,
+) -> List[Dict[str, Any]]:
     """
-    Returns the top matching chunk dictionaries.
+    Returns top matching chunk dictionaries enriched with cosine similarity score.
 
-    Each result contains:
-    text
-    page
-    chunk_id
+    Parameters
+    ----------
+    question : str
+        Search query string.
+    index : Optional[faiss.IndexFlatIP]
+        FAISS index object.
+    chunks : List[Dict[str, Any]]
+        Original list of chunk dictionaries.
+    top_k : int
+        Number of top matches to retrieve.
+
+    Returns
+    -------
+    List[Dict[str, Any]]
+        List of chunk dictionaries with attached 'score' (cosine similarity 0.0 - 1.0).
     """
-
-    if (
-        index is None
-        or not chunks
-    ):
+    if index is None or not chunks or not question.strip():
         return []
 
-    query_embedding = model.encode(
-        [question],
-        convert_to_numpy=True,
-    ).astype(np.float32)
+    try:
+        query_embedding = model.encode(
+            [question],
+            convert_to_numpy=True,
+        ).astype(np.float32)
 
-    distances, indices = index.search(
-        query_embedding,
-        top_k,
-    )
+        faiss.normalize_L2(query_embedding)
 
-    results = []
+        # Retrieve up to top_k elements (bounded by index total)
+        k_retrieve = min(top_k, index.ntotal)
+        if k_retrieve <= 0:
+            return []
 
-    for idx in indices[0]:
+        scores, indices = index.search(query_embedding, k_retrieve)
 
-        if idx < len(chunks):
+        results: List[Dict[str, Any]] = []
+        for raw_score, idx in zip(scores[0], indices[0]):
+            if 0 <= idx < len(chunks):
+                chunk_copy = dict(chunks[idx])
+                # Cosine similarity bounds clipped to [0.0, 1.0]
+                similarity = max(0.0, min(1.0, float(raw_score)))
+                chunk_copy["score"] = similarity
+                chunk_copy["vector_score"] = similarity
+                results.append(chunk_copy)
 
-            results.append(
-                chunks[idx]
-            )
+        return results
 
-    return results
+    except Exception as e:
+        logger.error(f"Error performing FAISS similarity search: {e}")
+        return []

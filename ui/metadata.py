@@ -1,21 +1,30 @@
 import streamlit as st
+from typing import Dict, Any
 
 
-def display_metadata(metadata: dict):
-
+def display_metadata(metadata: Dict[str, Any]):
     badges = []
 
-    badges.append(f"⏱️ {metadata.get('response_time', 0)} s")
+    badges.append(f"⏱️ {metadata.get('response_time', 0)}s")
     badges.append(f"🤖 {metadata.get('model', 'Unknown')}")
 
-    if metadata.get("used_web"):
-        badges.append("🌐 Web")
+    if metadata.get("used_browser"):
+        badges.append("🌐 Browser Automation")
 
     if metadata.get("used_pdf"):
-        badges.append("📄 PDF")
+        badges.append("📄 PDF (Advanced RAG)")
+
+    if metadata.get("used_web"):
+        badges.append("🔍 Web Search")
 
     if metadata.get("used_url"):
-        badges.append("🔗 URL")
+        badges.append("🔗 URL Reader")
+
+    confidence = metadata.get("confidence")
+    if confidence and confidence.get("score", 0) > 0 and not metadata.get("used_browser"):
+        score_val = confidence["score"]
+        level = confidence.get("level", "Medium")
+        badges.append(f"🎯 Confidence: {score_val}% ({level})")
 
     st.markdown(
         f"""
