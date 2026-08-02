@@ -731,6 +731,13 @@ Distributed under the MIT License. See `LICENSE` for details.
 
 ---
 
+## 📜 Developed By 
+
+Sonal Shailesh Parmar
+Computer Engineering | Machine Learning | Artificial intelligence
+
+---
+
 <div align="center">
   <b>Built with ❤️ using Python, Google Gemini, Streamlit & Ollama</b>
 </div>
