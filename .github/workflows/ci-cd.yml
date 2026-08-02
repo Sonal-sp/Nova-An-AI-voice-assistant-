@@ -24,7 +24,7 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgomp1 ffmpeg portaudio19-dev
+          sudo apt-get install -y libgomp1 ffmpeg portaudio19-dev libasound2-dev tesseract-ocr
 
       - name: Install Python Dependencies
         run: |
