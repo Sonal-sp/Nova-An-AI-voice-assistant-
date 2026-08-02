@@ -11,6 +11,10 @@ from services.bm25_service import build_bm25_index
 from services.browser_service import open_url
 from services.desktop_service import launch_app, get_system_diagnostics
 from services.vision_service import extract_images_from_pdf
+from services.speech_to_text import record_audio
+from services.gemini_service import transcribe_audio
+from services.voice_engine import process_voice_command
+from ui.audio_visualizer import render_audio_visualizer
 from utils.helpers import chat_to_text
 from utils.loading import loading
 from utils.constants import (
@@ -42,6 +46,33 @@ def show_sidebar() -> str:
                 TEXT_AND_VOICE,
             ],
         )
+
+        st.divider()
+
+        # ============================================
+        # Live Voice Assistant Widget (Wake-Word Enabled)
+        # ============================================
+        st.subheader("🎙️ Live Voice Assistant")
+        st.caption("Say **'Hey Nova'** or click below to speak!")
+
+        if st.button("🎤 Speak Voice Command", use_container_width=True):
+            st.session_state.is_listening = True
+            with loading("Listening for voice input..."):
+                audio_file = record_audio(duration=6)
+                if audio_file:
+                    try:
+                        transcript = transcribe_audio(audio_file)
+                        if transcript:
+                            res = process_voice_command(transcript)
+                            st.session_state.voice_prompt = res["command_text"]
+                            if res["wake_word_detected"]:
+                                st.toast("✨ Wake word 'Hey Nova' recognized!", icon="🎙️")
+                            st.rerun()
+                    except Exception as e:
+                        st.error(f"Voice Recognition Error: {e}")
+
+        if st.session_state.get("is_listening", False):
+            render_audio_visualizer(state="listening", label="Listening for 'Hey Nova'...")
 
         st.divider()
 
