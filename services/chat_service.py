@@ -16,6 +16,7 @@ from services.web_search import search_web, format_search_results
 from services.url_detector import extract_url
 from services.url_service import extract_text_from_url
 from services.rag_service import retrieve_advanced_rag_context
+from services.vision_service import analyze_image_with_vision, extract_text_ocr
 
 logger = logging.getLogger(__name__)
 
@@ -29,11 +30,12 @@ def process_chat(
 ) -> Optional[Dict[str, Any]]:
     """
     Processes user query through Nova's complete intelligence pipeline:
-    1. Browser Desktop Assistant (Open Websites, Google/YouTube/Maps Search)
-    2. Multi-document Advanced RAG (FAISS + BM25 + RRF + Re-ranking)
-    3. URL Text Extraction
-    4. Web Search
-    5. Gemini LLM synthesis
+    1. Vision AI & Image Understanding (if active image uploaded)
+    2. Browser Desktop Assistant (Open Websites, Google/YouTube/Maps Search)
+    3. Multi-document Advanced RAG (FAISS + BM25 + RRF + Re-ranking)
+    4. URL Text Extraction
+    5. Web Search
+    6. Gemini LLM synthesis
     """
     if not user_prompt or not user_prompt.strip():
         return None
@@ -45,7 +47,46 @@ def process_chat(
         add_message("user", user_prompt)
 
     # ==========================================================
-    # 1. Desktop Browser Assistant Check
+    # 1. Vision AI Analysis (Active Image attached)
+    # ==========================================================
+    active_image = st.session_state.get("active_image")
+    if active_image is not None:
+        vision_mode = st.session_state.get("vision_mode", "general")
+        logger.info(f"Processing Vision AI prompt with mode '{vision_mode}'...")
+
+        if vision_mode == "ocr":
+            ocr_res = extract_text_ocr(active_image)
+            response_text = f"### 🔤 Extracted Text ({ocr_res['engine']}):\n\n{ocr_res['text']}"
+            used_ocr = True
+        else:
+            response_text = analyze_image_with_vision(
+                image=active_image,
+                prompt=user_prompt,
+                analysis_type=vision_mode,
+            )
+            used_ocr = False
+
+        add_message("assistant", response_text)
+        elapsed = round(time.perf_counter() - start_time, 2)
+
+        return {
+            "text": response_text,
+            "metadata": {
+                "response_time": elapsed,
+                "model": "Gemini 2.5 Flash Vision",
+                "used_pdf": False,
+                "used_web": False,
+                "used_url": False,
+                "used_browser": False,
+                "used_vision": True,
+                "used_ocr": used_ocr,
+                "confidence": {"score": 95.0, "level": "High"},
+            },
+            "citations": [],
+        }
+
+    # ==========================================================
+    # 2. Desktop Browser Assistant Check
     # ==========================================================
     browser_intent = detect_browser_intent(user_prompt)
     if browser_intent:
@@ -68,6 +109,7 @@ def process_chat(
                 "used_web": False,
                 "used_url": False,
                 "used_browser": True,
+                "used_vision": False,
                 "browser_action": browser_res,
                 "confidence": {"score": 100.0, "level": "High"},
             },
@@ -81,7 +123,7 @@ def process_chat(
     rag_confidence = {"score": 0.0, "level": "N/A"}
 
     # ==========================================================
-    # 2. Advanced Multi-Document RAG (FAISS + BM25 + RRF + Re-ranking)
+    # 3. Advanced Multi-Document RAG (FAISS + BM25 + RRF + Re-ranking)
     # ==========================================================
     documents = st.session_state.get("documents", [])
     if documents:
@@ -98,7 +140,7 @@ def process_chat(
             logger.error(f"Failed during Advanced RAG processing: {e}")
 
     # ==========================================================
-    # 3. URL Reader
+    # 4. URL Reader
     # ==========================================================
     url = extract_url(user_prompt)
     if url:
@@ -110,7 +152,7 @@ def process_chat(
             logger.warning(f"Error fetching URL content: {e}")
 
     # ==========================================================
-    # 4. Web Search
+    # 5. Web Search
     # ==========================================================
     if should_search_web(user_prompt):
         try:
@@ -121,7 +163,7 @@ def process_chat(
             logger.warning(f"Error executing web search: {e}")
 
     # ==========================================================
-    # 5. Gemini Synthesis
+    # 6. Gemini Synthesis
     # ==========================================================
     assistant_response = get_assistant_response(
         messages=get_messages(),
@@ -144,6 +186,7 @@ def process_chat(
             "used_web": bool(web_context),
             "used_url": bool(url_context),
             "used_browser": False,
+            "used_vision": False,
             "confidence": rag_confidence,
         },
         "citations": citations,

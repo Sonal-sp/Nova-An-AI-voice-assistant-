@@ -1,4 +1,5 @@
 import streamlit as st
+from PIL import Image
 
 from services.memory import clear_messages
 from services.document_service import (
@@ -8,6 +9,7 @@ from services.document_service import (
 from services.embedding_service import create_embeddings
 from services.bm25_service import build_bm25_index
 from services.browser_service import open_url
+from services.vision_service import extract_images_from_pdf
 from utils.helpers import chat_to_text
 from utils.loading import loading
 from utils.constants import (
@@ -61,6 +63,44 @@ def show_sidebar() -> str:
         st.divider()
 
         # ============================================
+        # Vision AI & Image Understanding
+        # ============================================
+        st.subheader("📸 Vision AI & Image Upload")
+        uploaded_image = st.file_uploader(
+            "Upload Image (Screenshot / Diagram / Doc)",
+            type=["png", "jpg", "jpeg", "webp", "bmp"],
+            key="vision_image_uploader",
+        )
+
+        if uploaded_image:
+            try:
+                pil_img = Image.open(uploaded_image)
+                st.session_state.active_image = pil_img
+            except Exception as e:
+                st.error(f"Image error: {e}")
+
+        if st.session_state.get("active_image") is not None:
+            st.image(st.session_state.active_image, caption="📷 Active Vision Image", use_container_width=True)
+
+            vision_mode = st.selectbox(
+                "🎯 Vision Analysis Mode",
+                ["general", "screenshot", "diagram", "ocr"],
+                format_func=lambda x: {
+                    "general": "🔍 General Visual Understanding",
+                    "screenshot": "💻 Screenshot Explanation",
+                    "diagram": "📐 Diagram & Architecture Flow",
+                    "ocr": "🔤 Optical Character Recognition (OCR)",
+                }[x],
+            )
+            st.session_state.vision_mode = vision_mode
+
+            if st.button("🗑️ Clear Active Image", use_container_width=True):
+                st.session_state.active_image = None
+                st.rerun()
+
+        st.divider()
+
+        # ============================================
         # Initialize Documents Session State
         # ============================================
         if "documents" not in st.session_state:
@@ -103,11 +143,12 @@ def show_sidebar() -> str:
                     document["faiss_index"] = faiss_index
                     document["bm25_index"] = bm25_index
                     document["chunks"] = chunks
+                    document["raw_file"] = file
 
                     st.session_state.documents.append(document)
 
         # ============================================
-        # Uploaded Documents Status
+        # Uploaded Documents Status & PDF Image Extraction
         # ============================================
         st.subheader("📂 Uploaded Documents")
         documents = st.session_state.documents
@@ -125,6 +166,23 @@ def show_sidebar() -> str:
                         st.success("🔍 BM25 Keyword Index")
 
                     st.info("⚡ RRF & Re-ranker Ready")
+
+                    # Extract PDF embedded images button
+                    if doc.get("raw_file") and st.button("🖼️ Extract PDF Images", key=f"extract_img_{i}", use_container_width=True):
+                        with loading("Extracting raster images from PDF..."):
+                            doc["raw_file"].seek(0)
+                            pdf_imgs = extract_images_from_pdf(doc["raw_file"])
+                            doc["extracted_images"] = pdf_imgs
+                            st.session_state[f"show_pdf_imgs_{i}"] = True
+
+                    if doc.get("extracted_images"):
+                        st.markdown(f"**Found {len(doc['extracted_images'])} embedded images:**")
+                        for idx_img, record in enumerate(doc["extracted_images"][:3]):
+                            st.image(record["image"], caption=f"Page {record['page']} ({record['width']}x{record['height']})", use_container_width=True)
+                            if st.button(f"👁️ Analyze Image #{idx_img+1}", key=f"analyze_pdf_img_{i}_{idx_img}"):
+                                st.session_state.active_image = record["image"]
+                                st.session_state.vision_mode = "general"
+                                st.rerun()
 
                     if st.button(
                         "🗑 Remove",

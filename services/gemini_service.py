@@ -1,29 +1,70 @@
 import os
+import logging
+from typing import List, Any, Optional
 from dotenv import load_dotenv
 from google import genai
 import traceback
+from PIL import Image
+
 from config import GEMINI_MODEL, SYSTEM_PROMPT
+
 load_dotenv()
+logger = logging.getLogger(__name__)
 
 client = genai.Client(
     api_key=os.getenv("GEMINI_API_KEY")
 )
 
 
-def ask_gemini(conversation):
+def ask_gemini(conversation: List[Any]) -> str:
+    """
+    Sends conversational messages to Gemini model.
+    """
     try:
         response = client.models.generate_content(
             model=GEMINI_MODEL,
             contents=conversation,
         )
-
         return response.text
 
     except Exception as e:
-        print(f"Gemini Error: {e}")
+        logger.error(f"Gemini Error: {e}")
         return "⚠️ Sorry, I'm having trouble connecting to Gemini right now."
 
-def transcribe_audio(audio_path: str):
+
+def ask_gemini_vision(image: Image.Image, prompt: str) -> str:
+    """
+    Sends a PIL Image object and prompt to Gemini Multimodal Vision API.
+
+    Parameters
+    ----------
+    image : Image.Image
+        PIL Image object.
+    prompt : str
+        User prompt string.
+
+    Returns
+    -------
+    str
+        Vision model analysis text.
+    """
+    try:
+        user_prompt = prompt.strip() if prompt else "Describe and analyze this image in detail."
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=[image, user_prompt],
+        )
+        return response.text
+
+    except Exception as e:
+        logger.error(f"Gemini Vision Error: {e}")
+        return f"⚠️ Vision AI error: {e}"
+
+
+def transcribe_audio(audio_path: str) -> str:
+    """
+    Transcribes speech from audio file.
+    """
     try:
         audio_file = client.files.upload(file=audio_path)
 
@@ -45,42 +86,24 @@ Rules:
                 audio_file,
             ],
         )
-
         return response.text
 
     except Exception as e:
         traceback.print_exc()
         raise
 
-def handle_gemini_error(e):
 
+def handle_gemini_error(e: Exception) -> str:
+    """
+    Formats user-friendly error messages for Gemini API exceptions.
+    """
     message = str(e)
-
     if "429" in message:
-
-        return (
-            "⚠️ Nova has reached the Gemini API quota.\n\n"
-            "Please wait a minute and try again."
-        )
-
+        return "⚠️ Nova has reached the Gemini API quota.\n\nPlease wait a minute and try again."
     if "401" in message:
-
-        return (
-            "⚠️ Invalid Gemini API Key."
-        )
-
+        return "⚠️ Invalid Gemini API Key."
     if "403" in message:
-
-        return (
-            "⚠️ Permission denied."
-        )
-
+        return "⚠️ Permission denied."
     if "timeout" in message.lower():
-
-        return (
-            "🌐 Network timeout."
-        )
-
-    return (
-        "⚠️ Something went wrong."
-    )
+        return "🌐 Network timeout."
+    return "⚠️ Something went wrong."
