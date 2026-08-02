@@ -77,11 +77,14 @@ def show_sidebar() -> str:
         st.divider()
 
         # ============================================
-        # Settings & Productivity Toggles
+        # Settings, Analytics & Productivity Toggles
         # ============================================
         st.subheader("⚙️ Control Center")
         show_settings = st.toggle("Settings & System Health", value=st.session_state.get("show_settings_dashboard", False))
         st.session_state.show_settings_dashboard = show_settings
+
+        show_analytics = st.toggle("System Analytics & Insights", value=st.session_state.get("show_analytics_dashboard", False))
+        st.session_state.show_analytics_dashboard = show_analytics
 
         show_prod = st.toggle("Productivity Dashboard", value=st.session_state.get("show_prod_dashboard", False))
         st.session_state.show_prod_dashboard = show_prod

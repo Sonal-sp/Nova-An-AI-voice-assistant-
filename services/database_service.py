@@ -30,7 +30,7 @@ def get_db_connection() -> Generator[sqlite3.Connection, None, None]:
 
 def init_db() -> None:
     """
-    Initializes SQLite tables for Notes, To-dos, Calendar Events, and Reminders.
+    Initializes SQLite tables for Notes, To-dos, Calendar Events, Reminders, and Query Analytics Logs.
     """
     try:
         with get_db_connection() as conn:
@@ -92,7 +92,21 @@ def init_db() -> None:
                 """
             )
 
-            logger.info("Successfully initialized Nova productivity SQLite database schema.")
+            # 5. Query Analytics Logs Table
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS query_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    prompt TEXT NOT NULL,
+                    response_time_sec REAL NOT NULL,
+                    feature_used TEXT DEFAULT 'General Gemini',
+                    model_name TEXT DEFAULT 'Gemini 2.5 Flash',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                """
+            )
+
+            logger.info("Successfully initialized Nova productivity & analytics SQLite database schema.")
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
         raise e

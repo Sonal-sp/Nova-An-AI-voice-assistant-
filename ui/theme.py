@@ -54,7 +54,7 @@ def apply_theme():
             /* 6. Form Controls, Inputs & Selectboxes */
             input, textarea, div[data-baseweb="select"] > div {
                 background-color: #FFFFFF !important;
-                color: #0F172A !important;
+                color: #FFFFFF !important;
                 border-color: #CBD5E1 !important;
             }
 

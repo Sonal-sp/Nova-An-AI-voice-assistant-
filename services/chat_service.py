@@ -41,6 +41,7 @@ from services.url_detector import extract_url
 from services.url_service import extract_text_from_url
 from services.rag_service import retrieve_advanced_rag_context
 from services.vision_service import analyze_image_with_vision, extract_text_ocr
+from services.analytics_service import log_query_metrics
 from utils.settings import get_setting
 from utils.security import sanitize_input
 from utils.errors import safe_execute
@@ -66,6 +67,7 @@ def process_chat(
     7. URL Text Extraction
     8. Web Search
     9. Gemini LLM synthesis
+    10. Automatic Analytics Logging
     """
     clean_prompt = sanitize_input(user_prompt)
     if not clean_prompt:
@@ -99,6 +101,7 @@ def process_chat(
 
         add_message("assistant", response_text)
         elapsed = round(time.perf_counter() - start_time, 2)
+        log_query_metrics(clean_prompt, elapsed, "Vision AI", "Gemini 2.5 Flash Vision")
 
         return {
             "text": response_text,
@@ -158,6 +161,7 @@ def process_chat(
         if response_text:
             add_message("assistant", response_text)
             elapsed = round(time.perf_counter() - start_time, 2)
+            log_query_metrics(clean_prompt, elapsed, "Desktop Automation", "Nova Desktop Controller")
             return {
                 "text": response_text,
                 "metadata": {
@@ -246,6 +250,7 @@ def process_chat(
         if response_text:
             add_message("assistant", response_text)
             elapsed = round(time.perf_counter() - start_time, 2)
+            log_query_metrics(clean_prompt, elapsed, "Productivity Engine", "Nova Productivity Engine")
             return {
                 "text": response_text,
                 "metadata": {
@@ -275,6 +280,7 @@ def process_chat(
         response_text = browser_res["message"]
         add_message("assistant", response_text)
         elapsed = round(time.perf_counter() - start_time, 2)
+        log_query_metrics(clean_prompt, elapsed, "Browser Assistant", "Nova Desktop Assistant")
 
         return {
             "text": response_text,
@@ -353,6 +359,8 @@ def process_chat(
     add_message("assistant", assistant_response)
 
     elapsed = round(time.perf_counter() - start_time, 2)
+    feature_tag = "Advanced RAG" if document_context else ("Web Search" if web_context else "General Gemini")
+    log_query_metrics(clean_prompt, elapsed, feature_tag, "Gemini 2.5 Flash")
 
     return {
         "text": assistant_response,
