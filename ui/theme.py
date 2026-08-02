@@ -35,7 +35,7 @@ def apply_theme():
             /* 4. Chat Messages & Cards */
             [data-testid="stChatMessage"] {
                 background-color: #FFFFFF !important;
-                color: #FFFFFF !important;
+                color: #0F172A !important;
                 border: 1px solid #E2E8F0 !important;
                 border-radius: 12px !important;
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
@@ -54,7 +54,7 @@ def apply_theme():
             /* 6. Form Controls, Inputs & Selectboxes */
             input, textarea, div[data-baseweb="select"] > div {
                 background-color: #FFFFFF !important;
-                color: #FFFFFF !important;
+                color: #0F172A !important;
                 border-color: #CBD5E1 !important;
             }
 
