@@ -310,16 +310,38 @@ def show_sidebar() -> str:
         st.divider()
 
         # ============================================
-        # Export Chat
+        # Export Chat (JSON, Markdown, TXT)
         # ============================================
-        chat_text = chat_to_text(st.session_state.get("messages", []))
-        st.download_button(
-            "📥 Export Chat",
-            chat_text,
-            file_name="nova_chat.txt",
-            mime="text/plain",
-            use_container_width=True,
-        )
+        from utils.exporters import export_chat_to_json, export_chat_to_markdown, export_chat_to_txt
+
+        messages_list = st.session_state.get("messages", [])
+        st.write("**📥 Export Chat Transcript**")
+
+        exp_col1, exp_col2, exp_col3 = st.columns(3)
+        with exp_col1:
+            st.download_button(
+                "📄 TXT",
+                export_chat_to_txt(messages_list),
+                file_name="nova_transcript.txt",
+                mime="text/plain",
+                use_container_width=True,
+            )
+        with exp_col2:
+            st.download_button(
+                "📝 MD",
+                export_chat_to_markdown(messages_list),
+                file_name="nova_transcript.md",
+                mime="text/markdown",
+                use_container_width=True,
+            )
+        with exp_col3:
+            st.download_button(
+                "📊 JSON",
+                export_chat_to_json(messages_list),
+                file_name="nova_transcript.json",
+                mime="application/json",
+                use_container_width=True,
+            )
 
         st.divider()
 

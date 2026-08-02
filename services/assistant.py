@@ -1,8 +1,11 @@
+import logging
 import streamlit as st
 from config import SYSTEM_PROMPT
 from services.gemini_service import ask_gemini
 from services.ollama_service import generate_local_response
 from utils.constants import MAX_CONTEXT_MESSAGES
+
+logger = logging.getLogger(__name__)
 
 
 def get_assistant_response(
@@ -13,6 +16,7 @@ def get_assistant_response(
 ):
     """
     Builds prompt and routes execution to selected model (Gemini vs Local Ollama).
+    Provides automatic fallback to Gemini 2.5 Flash if local model fails.
     """
 
     conversation = [
@@ -106,11 +110,19 @@ WEBPAGE CONTENT:
     if selected_model.startswith("Ollama:") or selected_model.startswith("Local:"):
         model_name = selected_model.split(":", 1)[1].strip() if ":" in selected_model else "llama3:latest"
         user_prompt = messages[-1]["content"] if messages else ""
-        return generate_local_response(
+
+        local_res = generate_local_response(
             prompt=user_prompt,
             model=model_name,
             system_prompt="\n".join(conversation[:-1]),
         )
+
+        if local_res:
+            return local_res
+
+        # Fallback to Gemini if Ollama fails or times out
+        logger.warning(f"Local model '{model_name}' did not return a response. Falling back to Gemini 2.5 Flash.")
+        st.toast(f"⚠️ Local model '{model_name}' timed out. Switched to Gemini 2.5 Flash", icon="💡")
 
     # Default online Gemini synthesis
     return ask_gemini(conversation)
