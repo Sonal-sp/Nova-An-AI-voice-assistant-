@@ -8,6 +8,9 @@ def display_metadata(metadata: Dict[str, Any]):
     badges.append(f"⏱️ {metadata.get('response_time', 0)}s")
     badges.append(f"🤖 {metadata.get('model', 'Unknown')}")
 
+    if metadata.get("used_desktop"):
+        badges.append("🖥️ Desktop Automation")
+
     if metadata.get("used_productivity"):
         badges.append("⚡ Productivity Engine")
 
@@ -30,7 +33,14 @@ def display_metadata(metadata: Dict[str, Any]):
         badges.append("🔗 URL Reader")
 
     confidence = metadata.get("confidence")
-    if confidence and confidence.get("score", 0) > 0 and not metadata.get("used_browser") and not metadata.get("used_vision") and not metadata.get("used_productivity"):
+    if (
+        confidence
+        and confidence.get("score", 0) > 0
+        and not metadata.get("used_browser")
+        and not metadata.get("used_vision")
+        and not metadata.get("used_productivity")
+        and not metadata.get("used_desktop")
+    ):
         score_val = confidence["score"]
         level = confidence.get("level", "Medium")
         badges.append(f"🎯 Confidence: {score_val}% ({level})")

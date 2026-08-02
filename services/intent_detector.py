@@ -93,18 +93,6 @@ def detect_browser_intent(prompt: str) -> Optional[Dict[str, str]]:
 def detect_productivity_intent(prompt: str) -> Optional[Dict[str, Any]]:
     """
     Detects if user prompt is a productivity action request.
-
-    Supported intents:
-    - "show daily planner", "my planner", "today's agenda"
-    - "create note <title>: <content>", "add note <title>: <content>", "show notes"
-    - "add task <task>", "add todo <task>", "show todos", "show tasks"
-    - "schedule event <title> at <time>", "show calendar"
-    - "set reminder <text> at <time>", "show reminders"
-
-    Returns
-    -------
-    Optional[Dict[str, Any]]
-        Action type and extracted parameters or None.
     """
     if not prompt or not prompt.strip():
         return None
@@ -131,7 +119,6 @@ def detect_productivity_intent(prompt: str) -> Optional[Dict[str, Any]]:
     todo_create = re.search(r"(?:add\s+task|add\s+todo|create\s+task|new\s+task|create\s+todo)\s+(.+)", clean, re.IGNORECASE)
     if todo_create:
         task_str = todo_create.group(1).strip()
-        # Check optional due date or priority
         priority = "Medium"
         if "priority high" in task_str.lower():
             priority = "High"
@@ -165,5 +152,67 @@ def detect_productivity_intent(prompt: str) -> Optional[Dict[str, Any]]:
 
     if any(k in lower for k in ["show reminders", "list reminders", "my reminders"]):
         return {"action_type": "show_reminders"}
+
+    return None
+
+
+def detect_desktop_intent(prompt: str) -> Optional[Dict[str, Any]]:
+    """
+    Detects desktop automation requests (app launch, folder opener, file search, system stats).
+
+    Supported intents:
+    - "launch vs code", "open vs code", "open chrome", "open spotify", "launch notepad", "open calculator"
+    - "open folder <path>", "open downloads", "open documents"
+    - "search file <name>", "find file <name>"
+    - "copy to clipboard <text>", "read clipboard"
+    - "system status", "cpu usage", "system monitor"
+
+    Returns
+    -------
+    Optional[Dict[str, Any]]
+        Desktop action intent dictionary or None.
+    """
+    if not prompt or not prompt.strip():
+        return None
+
+    clean = prompt.strip()
+    lower = clean.lower()
+
+    # 1. System Diagnostics
+    if any(k in lower for k in ["system status", "system stats", "cpu usage", "memory usage", "system monitor", "system info"]):
+        return {"action_type": "system_stats"}
+
+    # 2. Application Launcher (VS Code, Chrome, Spotify, Notepad, Calculator, Paint, Terminal)
+    app_launch_match = re.search(
+        r"^(?:launch|open|run|start)\s+(?:app(?:lication)?\s+)?(vs\s*code|code|chrome|spotify|notepad|calc(?:ulator)?|paint|terminal|cmd|powershell)$",
+        clean,
+        re.IGNORECASE,
+    )
+    if app_launch_match:
+        app_name = app_launch_match.group(1).strip()
+        return {"action_type": "launch_app", "target": app_name}
+
+    # 3. Folder Explorer Opener
+    folder_match = re.search(
+        r"^(?:open|show|explore)\s+(?:folder|directory)\s+(.+)$|^(?:open|show)\s+(downloads|documents|desktop|workspace)$",
+        clean,
+        re.IGNORECASE,
+    )
+    if folder_match:
+        target_folder = folder_match.group(1) or folder_match.group(2)
+        return {"action_type": "open_folder", "target": target_folder.strip()}
+
+    # 4. File Search
+    file_search_match = re.search(r"(?:search\s+file|find\s+file|locate\s+file|search\s+for\s+file)\s+(.+)", clean, re.IGNORECASE)
+    if file_search_match:
+        return {"action_type": "search_files", "target": file_search_match.group(1).strip()}
+
+    # 5. Clipboard Utilities
+    copy_match = re.search(r"(?:copy\s+to\s+clipboard|copy\s+text)\s+(.+)", clean, re.IGNORECASE)
+    if copy_match:
+        return {"action_type": "copy_clipboard", "text": copy_match.group(1).strip()}
+
+    if any(k in lower for k in ["read clipboard", "get clipboard", "show clipboard"]):
+        return {"action_type": "read_clipboard"}
 
     return None

@@ -10,7 +10,12 @@ from services.memory import (
     remove_last_assistant_message,
 )
 from services.assistant import get_assistant_response
-from services.intent_detector import should_search_web, detect_browser_intent, detect_productivity_intent
+from services.intent_detector import (
+    should_search_web,
+    detect_browser_intent,
+    detect_productivity_intent,
+    detect_desktop_intent,
+)
 from services.browser_service import execute_browser_action
 from services.productivity_service import (
     add_note,
@@ -22,6 +27,14 @@ from services.productivity_service import (
     add_reminder,
     get_all_reminders,
     get_daily_planner_summary,
+)
+from services.desktop_service import (
+    launch_app,
+    open_folder,
+    search_files,
+    get_clipboard_text,
+    set_clipboard_text,
+    get_system_diagnostics,
 )
 from services.web_search import search_web, format_search_results
 from services.url_detector import extract_url
@@ -42,12 +55,13 @@ def process_chat(
     """
     Processes user query through Nova's complete intelligence pipeline:
     1. Vision AI & Image Understanding (if active image attached)
-    2. Desktop Productivity Suite Commands
-    3. Browser Desktop Assistant (Open Websites, Google/YouTube/Maps Search)
-    4. Multi-document Advanced RAG (FAISS + BM25 + RRF + Re-ranking)
-    5. URL Text Extraction
-    6. Web Search
-    7. Gemini LLM synthesis
+    2. Desktop Automation Commands (Launch Apps, Explorer, Search Files, Clipboard, Stats)
+    3. Desktop Productivity Suite Commands (Notes, Tasks, Calendar, Reminders)
+    4. Browser Desktop Assistant (Open Websites, Google/YouTube/Maps Search)
+    5. Multi-document Advanced RAG (FAISS + BM25 + RRF + Re-ranking)
+    6. URL Text Extraction
+    7. Web Search
+    8. Gemini LLM synthesis
     """
     if not user_prompt or not user_prompt.strip():
         return None
@@ -98,7 +112,64 @@ def process_chat(
         }
 
     # ==========================================================
-    # 2. Desktop Productivity Commands Check
+    # 2. Desktop System Automation Commands
+    # ==========================================================
+    desktop_intent = detect_desktop_intent(user_prompt)
+    if desktop_intent:
+        logger.info(f"Desktop intent detected: {desktop_intent}")
+        act = desktop_intent["action_type"]
+        response_text = ""
+
+        if act == "launch_app":
+            res = launch_app(desktop_intent["target"])
+            response_text = res["message"]
+
+        elif act == "open_folder":
+            res = open_folder(desktop_intent["target"])
+            response_text = res["message"]
+
+        elif act == "search_files":
+            matches = search_files(desktop_intent["target"])
+            if matches:
+                lines = [f"### 🔍 Found {len(matches)} matching files:\n"]
+                for f in matches:
+                    lines.append(f"- 📄 **{f['name']}** ({f['size_kb']} KB) — `{f['path']}`")
+                response_text = "\n".join(lines)
+            else:
+                response_text = f"🔍 No files found matching **'{desktop_intent['target']}'**."
+
+        elif act == "copy_clipboard":
+            success = set_clipboard_text(desktop_intent["text"])
+            response_text = f"📋 Copied to system clipboard: **'{desktop_intent['text']}'**" if success else "⚠️ Clipboard error."
+
+        elif act == "read_clipboard":
+            text = get_clipboard_text()
+            response_text = f"### 📋 System Clipboard Content:\n\n```text\n{text}\n```" if text else "📋 System clipboard is empty."
+
+        elif act == "system_stats":
+            diag = get_system_diagnostics()
+            response_text = diag["summary_markdown"]
+
+        if response_text:
+            add_message("assistant", response_text)
+            elapsed = round(time.perf_counter() - start_time, 2)
+            return {
+                "text": response_text,
+                "metadata": {
+                    "response_time": elapsed,
+                    "model": "Nova Desktop Controller",
+                    "used_pdf": False,
+                    "used_web": False,
+                    "used_url": False,
+                    "used_browser": False,
+                    "used_desktop": True,
+                    "confidence": {"score": 100.0, "level": "High"},
+                },
+                "citations": [],
+            }
+
+    # ==========================================================
+    # 3. Desktop Productivity Commands Check
     # ==========================================================
     prod_intent = detect_productivity_intent(user_prompt)
     if prod_intent:
@@ -186,7 +257,7 @@ def process_chat(
             }
 
     # ==========================================================
-    # 3. Desktop Browser Assistant Check
+    # 4. Desktop Browser Assistant Check
     # ==========================================================
     browser_intent = detect_browser_intent(user_prompt)
     if browser_intent:
@@ -223,7 +294,7 @@ def process_chat(
     rag_confidence = {"score": 0.0, "level": "N/A"}
 
     # ==========================================================
-    # 4. Advanced Multi-Document RAG (FAISS + BM25 + RRF + Re-ranking)
+    # 5. Advanced Multi-Document RAG (FAISS + BM25 + RRF + Re-ranking)
     # ==========================================================
     documents = st.session_state.get("documents", [])
     if documents:
@@ -240,7 +311,7 @@ def process_chat(
             logger.error(f"Failed during Advanced RAG processing: {e}")
 
     # ==========================================================
-    # 5. URL Reader
+    # 6. URL Reader
     # ==========================================================
     url = extract_url(user_prompt)
     if url:
@@ -252,7 +323,7 @@ def process_chat(
             logger.warning(f"Error fetching URL content: {e}")
 
     # ==========================================================
-    # 6. Web Search
+    # 7. Web Search
     # ==========================================================
     if should_search_web(user_prompt):
         try:
@@ -263,7 +334,7 @@ def process_chat(
             logger.warning(f"Error executing web search: {e}")
 
     # ==========================================================
-    # 7. Gemini Synthesis
+    # 8. Gemini Synthesis
     # ==========================================================
     assistant_response = get_assistant_response(
         messages=get_messages(),

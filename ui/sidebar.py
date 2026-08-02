@@ -9,6 +9,7 @@ from services.document_service import (
 from services.embedding_service import create_embeddings
 from services.bm25_service import build_bm25_index
 from services.browser_service import open_url
+from services.desktop_service import launch_app, get_system_diagnostics
 from services.vision_service import extract_images_from_pdf
 from utils.helpers import chat_to_text
 from utils.loading import loading
@@ -50,6 +51,32 @@ def show_sidebar() -> str:
         st.subheader("⚡ Productivity Suite")
         show_prod = st.toggle("Show Productivity Dashboard", value=st.session_state.get("show_prod_dashboard", False))
         st.session_state.show_prod_dashboard = show_prod
+
+        st.divider()
+
+        # ============================================
+        # Desktop Assistant Quick Launcher
+        # ============================================
+        st.subheader("🖥️ Desktop Apps Quick Launch")
+        d_col1, d_col2 = st.columns(2)
+        with d_col1:
+            if st.button("💻 VS Code", use_container_width=True):
+                res = launch_app("vscode")
+                st.toast(res["message"])
+            if st.button("🎵 Spotify", use_container_width=True):
+                res = launch_app("spotify")
+                st.toast(res["message"])
+        with d_col2:
+            if st.button("🌐 Chrome", use_container_width=True):
+                res = launch_app("chrome")
+                st.toast(res["message"])
+            if st.button("🧮 Calculator", use_container_width=True):
+                res = launch_app("calc")
+                st.toast(res["message"])
+
+        if st.button("📊 System Diagnostics", use_container_width=True):
+            diag = get_system_diagnostics()
+            st.info(diag["summary_markdown"])
 
         st.divider()
 
