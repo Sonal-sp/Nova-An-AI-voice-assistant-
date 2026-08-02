@@ -14,6 +14,7 @@ from ui.input import get_user_input
 from ui.productivity_ui import render_productivity_dashboard
 from ui.settings_ui import render_settings_dashboard
 from ui.analytics_ui import render_analytics_dashboard
+from ui.integrations_ui import render_integrations_dashboard
 from ui.theme import apply_theme
 
 from utils.constants import THINKING_MESSAGE
@@ -37,7 +38,7 @@ response_mode = show_sidebar()
 
 # Header
 st.title("🤖 Nova")
-st.caption("Your Personal AI Assistant powered by Gemini")
+st.caption("Your Personal AI Assistant powered by Gemini & Local Offline AI")
 
 # Settings & System Health View (if toggled in sidebar)
 if st.session_state.get("show_settings_dashboard", False):
@@ -47,6 +48,11 @@ if st.session_state.get("show_settings_dashboard", False):
 # System Analytics & Insights View (if toggled in sidebar)
 if st.session_state.get("show_analytics_dashboard", False):
     render_analytics_dashboard()
+    st.divider()
+
+# Cloud Integrations Control Suite (if toggled in sidebar)
+if st.session_state.get("show_integrations_dashboard", False):
+    render_integrations_dashboard()
     st.divider()
 
 # Productivity Dashboard View (if toggled in sidebar)

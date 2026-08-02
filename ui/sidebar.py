@@ -14,6 +14,7 @@ from services.vision_service import extract_images_from_pdf
 from services.speech_to_text import record_audio
 from services.gemini_service import transcribe_audio
 from services.voice_engine import process_voice_command
+from services.ollama_service import get_local_models, is_ollama_available
 from ui.audio_visualizer import render_audio_visualizer
 from utils.helpers import chat_to_text
 from utils.loading import loading
@@ -36,7 +37,7 @@ def show_sidebar() -> str:
         st.divider()
 
         # ============================================
-        # Response Mode
+        # Response Mode & Model Switcher (Local AI & Cloud)
         # ============================================
         response_mode = st.radio(
             "🔊 Response Mode",
@@ -46,6 +47,22 @@ def show_sidebar() -> str:
                 TEXT_AND_VOICE,
             ],
         )
+
+        st.subheader("🧠 Model Engine")
+        local_models = ["Gemini 2.5 Flash"]
+        if is_ollama_available():
+            for m in get_local_models():
+                local_models.append(f"Ollama: {m}")
+        else:
+            local_models.extend(["Ollama: llama3:latest (Offline)", "Ollama: mistral:latest (Offline)"])
+
+        selected_model = st.selectbox(
+            "Select LLM Model",
+            local_models,
+            index=0,
+            key="model_selector_dropdown",
+        )
+        st.session_state.selected_model = selected_model
 
         st.divider()
 
@@ -77,7 +94,7 @@ def show_sidebar() -> str:
         st.divider()
 
         # ============================================
-        # Settings, Analytics & Productivity Toggles
+        # Settings, Analytics, Productivity & Integrations Toggles
         # ============================================
         st.subheader("⚙️ Control Center")
         show_settings = st.toggle("Settings & System Health", value=st.session_state.get("show_settings_dashboard", False))
@@ -85,6 +102,9 @@ def show_sidebar() -> str:
 
         show_analytics = st.toggle("System Analytics & Insights", value=st.session_state.get("show_analytics_dashboard", False))
         st.session_state.show_analytics_dashboard = show_analytics
+
+        show_integrations = st.toggle("Cloud Integrations Suite", value=st.session_state.get("show_integrations_dashboard", False))
+        st.session_state.show_integrations_dashboard = show_integrations
 
         show_prod = st.toggle("Productivity Dashboard", value=st.session_state.get("show_prod_dashboard", False))
         st.session_state.show_prod_dashboard = show_prod

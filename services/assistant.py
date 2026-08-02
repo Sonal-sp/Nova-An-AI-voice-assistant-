@@ -1,5 +1,7 @@
+import streamlit as st
 from config import SYSTEM_PROMPT
 from services.gemini_service import ask_gemini
+from services.ollama_service import generate_local_response
 from utils.constants import MAX_CONTEXT_MESSAGES
 
 
@@ -10,12 +12,12 @@ def get_assistant_response(
     url_context=None,
 ):
     """
-    Builds the prompt sent to Gemini.
+    Builds prompt and routes execution to selected model (Gemini vs Local Ollama).
     """
 
     conversation = [
-    SYSTEM_PROMPT,
-    """
+        SYSTEM_PROMPT,
+        """
 You are Nova.
 
 Priority for answering:
@@ -25,14 +27,13 @@ Priority for answering:
 4. Otherwise use your own knowledge.
 
 Always give the most accurate answer possible.
-"""
-]
+""",
+    ]
 
     # ==========================================================
     # PDF Context
     # ==========================================================
     if document_context:
-
         conversation.append(
             f"""
 You have been provided with relevant content from a PDF.
@@ -53,7 +54,6 @@ PDF CONTENT:
     # Web Search Context
     # ==========================================================
     if web_context:
-
         conversation.append(
             f"""
 You have been provided with recent web search results.
@@ -74,7 +74,6 @@ WEB SEARCH RESULTS:
     # URL Context
     # ==========================================================
     if url_context:
-
         conversation.append(
             f"""
 The user has provided a webpage.
@@ -95,12 +94,23 @@ WEBPAGE CONTENT:
     recent_messages = messages[-MAX_CONTEXT_MESSAGES:]
 
     for message in recent_messages:
-
         conversation.append(
             f"{message['role'].capitalize()}: {message['content']}"
         )
 
     # ==========================================================
-    # Ask Gemini
+    # Model Selection & Inference Routing
     # ==========================================================
+    selected_model = st.session_state.get("selected_model", "Gemini 2.5 Flash")
+
+    if selected_model.startswith("Ollama:") or selected_model.startswith("Local:"):
+        model_name = selected_model.split(":", 1)[1].strip() if ":" in selected_model else "llama3:latest"
+        user_prompt = messages[-1]["content"] if messages else ""
+        return generate_local_response(
+            prompt=user_prompt,
+            model=model_name,
+            system_prompt="\n".join(conversation[:-1]),
+        )
+
+    # Default online Gemini synthesis
     return ask_gemini(conversation)

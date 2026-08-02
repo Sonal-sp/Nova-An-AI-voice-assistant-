@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  nova-assistant:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nova-voice-assistant
+    ports:
+      - "8501:8501"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - ENVIRONMENT=production
+    volumes:
+      - .:/app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
