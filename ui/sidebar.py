@@ -30,7 +30,7 @@ from utils.constants import (
 def show_sidebar() -> str:
     """
     Renders Nova's AI Operating System Control Center Sidebar.
-    Featuring live CPU/RAM metrics, model engine selection, voice widget,
+    Featuring live CPU/RAM metrics, model engine selection, voice assistant widget,
     quick launch desktop shortcuts, document indexers, and transcript exporters.
     """
     with st.sidebar:
@@ -102,26 +102,42 @@ def show_sidebar() -> str:
         st.divider()
 
         # ============================================
-        # Live Voice Assistant Widget
+        # Sidebar Primary Voice Assistant Widget
         # ============================================
-        st.subheader("🎙️ Voice Assistant")
-        st.caption("Trigger with **'Hey Nova'** or click below:")
+        st.subheader("🎙️ Voice Assistant Engine")
+        st.caption("Trigger hands-free with **'Hey Nova'** or click microphone:")
 
-        if st.button("🎤 Speak Voice Command", use_container_width=True):
+        if st.button("🎤 Speak Voice Command", use_container_width=True, key="sidebar_voice_btn"):
             st.session_state.is_listening = True
-            with loading("Listening for voice input..."):
+            render_audio_visualizer(state="listening", label="Listening for audio input...")
+
+            with loading("🎤 Recording audio input (6s)..."):
                 audio_file = record_audio(duration=6)
-                if audio_file:
+
+            if audio_file:
+                with loading("⚡ Transcribing & processing wake word..."):
                     try:
                         transcript = transcribe_audio(audio_file)
-                        if transcript:
+                        if transcript and transcript.strip():
                             res = process_voice_command(transcript)
-                            st.session_state.voice_prompt = res["command_text"]
+                            cmd_text = res["command_text"]
+                            st.session_state.voice_prompt = cmd_text
+
                             if res["wake_word_detected"]:
-                                st.toast("✨ Wake word 'Hey Nova' recognized!", icon="🎙️")
+                                st.toast(f"✨ Wake word 'Hey Nova' triggered! Command: '{cmd_text}'", icon="🎙️")
+                            else:
+                                st.toast(f"🎤 Voice command captured: '{cmd_text}'", icon="🎙️")
+
+                            st.session_state.is_listening = False
                             st.rerun()
+                        else:
+                            st.warning("⚠️ No clear speech detected. Please try speaking again.")
                     except Exception as e:
-                        st.error(f"Voice Error: {e}")
+                        st.error(f"Voice Recognition Error: {e}")
+            else:
+                st.error("❌ Audio recording failed. Check microphone hardware.")
+
+            st.session_state.is_listening = False
 
         if st.session_state.get("is_listening", False):
             render_audio_visualizer(state="listening", label="Listening for 'Hey Nova'...")
