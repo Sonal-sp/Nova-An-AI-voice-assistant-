@@ -12,6 +12,7 @@ from utils.settings import get_setting
 load_dotenv()
 logger = logging.getLogger(__name__)
 
+# Single client instance for maximum performance & connection reuse
 client = genai.Client(
     api_key=os.getenv("GEMINI_API_KEY")
 )
@@ -19,7 +20,7 @@ client = genai.Client(
 
 def ask_gemini(conversation: List[Any]) -> str:
     """
-    Sends conversational messages to Gemini model using dynamic settings for model and temperature.
+    Sends conversational messages to Gemini 2.5 Flash model with high-speed token generation configuration.
     """
     try:
         model_name = get_setting("default_model", GEMINI_MODEL)
@@ -29,7 +30,9 @@ def ask_gemini(conversation: List[Any]) -> str:
             model=model_name,
             contents=conversation,
             config=genai.types.GenerateContentConfig(
+                system_instruction=SYSTEM_PROMPT,
                 temperature=temperature,
+                max_output_tokens=1024,
             ),
         )
         return response.text
@@ -49,6 +52,11 @@ def ask_gemini_vision(image: Image.Image, prompt: str) -> str:
         response = client.models.generate_content(
             model=model_name,
             contents=[image, user_prompt],
+            config=genai.types.GenerateContentConfig(
+                system_instruction=SYSTEM_PROMPT,
+                temperature=0.4,
+                max_output_tokens=1024,
+            ),
         )
         return response.text
 
@@ -59,7 +67,7 @@ def ask_gemini_vision(image: Image.Image, prompt: str) -> str:
 
 def transcribe_audio(audio_path: str) -> str:
     """
-    Transcribes speech from audio file.
+    Transcribes speech from audio file using fast Gemini Flash ASR.
     """
     try:
         audio_file = client.files.upload(file=audio_path)
@@ -69,18 +77,15 @@ def transcribe_audio(audio_path: str) -> str:
             contents=[
                 """
 You are an automatic speech recognition system.
-
-Your task is to produce a COMPLETE VERBATIM transcript.
-
-Rules:
-- Return every spoken word.
-- Do not summarize.
-- Do not omit words.
-- Do not paraphrase.
-- Return only the transcript.
+Return a complete verbatim transcript.
+Do not summarize or paraphrase. Return only the transcript.
 """,
                 audio_file,
             ],
+            config=genai.types.GenerateContentConfig(
+                temperature=0.1,
+                max_output_tokens=256,
+            ),
         )
         return response.text
 

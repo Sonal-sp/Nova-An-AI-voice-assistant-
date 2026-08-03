@@ -146,8 +146,8 @@ def render_settings_dashboard():
         st.markdown("### 🎨 System Preferences")
         col_s1, col_s2 = st.columns(2)
         with col_s1:
-            theme_opts = ["Dark", "Light", "Nova Cyberpunk"]
-            curr_th = curr.get("theme", "Dark")
+            theme_opts = ["Nova Cyberpunk", "Obsidian Dark"]
+            curr_th = curr.get("theme", "Nova Cyberpunk")
             th_idx = theme_opts.index(curr_th) if curr_th in theme_opts else 0
             theme_val = st.selectbox(
                 "UI Theme Palette",
