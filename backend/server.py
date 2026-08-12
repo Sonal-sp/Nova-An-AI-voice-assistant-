@@ -7,7 +7,8 @@ from typing import List, Dict, Any, Optional
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 # Ensure parent directory is in sys.path to import existing services seamlessly
@@ -116,21 +117,29 @@ async def chat_stream(req: ChatRequest):
 
     async def event_generator():
         try:
-            # Generate assistant response using existing process_chat pipeline
-            full_response = process_chat(req.prompt)
-            text_content = full_response.get("text", "")
-            citations = full_response.get("citations", [])
-            metadata = full_response.get("metadata", {})
+            # Run synchronous process_chat in thread pool to prevent blocking
+            full_response = await asyncio.to_thread(
+                process_chat, req.prompt, True, req.selected_model
+            )
+
+            if not full_response:
+                text_content = "Command executed successfully."
+                citations = []
+                metadata = {}
+            else:
+                text_content = full_response.get("text", "")
+                citations = full_response.get("citations", [])
+                metadata = full_response.get("metadata", {})
 
             session_messages.append({"role": "assistant", "content": text_content})
 
-            # Stream words chunk-by-chunk for ultra-fast real-time token feel
-            words = text_content.split(" ")
+            # Stream words chunk-by-chunk for real-time streaming feel
+            words = text_content.split(" ") if text_content else ["Done."]
             for i, word in enumerate(words):
                 chunk = word + (" " if i < len(words) - 1 else "")
                 payload = json.dumps({"type": "token", "content": chunk})
                 yield f"data: {payload}\n\n"
-                await asyncio.sleep(0.012)
+                await asyncio.sleep(0.01)
 
             # Send final payload metadata & citations
             final_payload = json.dumps({
@@ -288,6 +297,21 @@ def clear_messages_route():
     global session_messages
     session_messages = []
     return {"status": "success"}
+
+
+# Serve static built React Single Page App if frontend/dist exists
+frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
+if os.path.exists(frontend_dist):
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        if full_path.startswith("api"):
+            raise HTTPException(status_code=404, detail="API endpoint not found")
+        file_path = os.path.join(frontend_dist, full_path)
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            return FileResponse(file_path)
+        return FileResponse(os.path.join(frontend_dist, "index.html"))
 
 
 if __name__ == "__main__":

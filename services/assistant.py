@@ -1,5 +1,4 @@
 import logging
-import streamlit as st
 from config import SYSTEM_PROMPT
 from services.gemini_service import ask_gemini
 from services.ollama_service import generate_local_response
@@ -8,11 +7,22 @@ from utils.constants import MAX_CONTEXT_MESSAGES
 logger = logging.getLogger(__name__)
 
 
+def _get_safe_model(fallback: str = "Gemini 2.5 Flash") -> str:
+    try:
+        import streamlit as st
+        if hasattr(st, "session_state"):
+            return st.session_state.get("selected_model", fallback)
+    except Exception:
+        pass
+    return fallback
+
+
 def get_assistant_response(
     messages,
     document_context=None,
     web_context=None,
     url_context=None,
+    selected_model=None,
 ):
     """
     Builds prompt and routes execution to selected model (Gemini vs Local Ollama).
@@ -105,7 +115,8 @@ WEBPAGE CONTENT:
     # ==========================================================
     # Model Selection & Inference Routing
     # ==========================================================
-    selected_model = st.session_state.get("selected_model", "Gemini 2.5 Flash")
+    if not selected_model:
+        selected_model = _get_safe_model("Gemini 2.5 Flash")
 
     if selected_model.startswith("Ollama:") or selected_model.startswith("Local:"):
         model_name = selected_model.split(":", 1)[1].strip() if ":" in selected_model else "llama3:latest"
@@ -122,7 +133,12 @@ WEBPAGE CONTENT:
 
         # Fallback to Gemini if Ollama fails or times out
         logger.warning(f"Local model '{model_name}' did not return a response. Falling back to Gemini 2.5 Flash.")
-        st.toast(f"⚠️ Local model '{model_name}' timed out. Switched to Gemini 2.5 Flash", icon="💡")
+        try:
+            import streamlit as st
+            if hasattr(st, "toast"):
+                st.toast(f"⚠️ Local model '{model_name}' timed out. Switched to Gemini 2.5 Flash", icon="💡")
+        except Exception:
+            pass
 
     # Default online Gemini synthesis
     return ask_gemini(conversation)

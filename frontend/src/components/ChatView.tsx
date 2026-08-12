@@ -56,7 +56,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
     setStreamingText('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/chat/stream', {
+      const response = await fetch('/api/chat/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

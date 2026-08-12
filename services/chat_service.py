@@ -1,7 +1,7 @@
 import time
 import logging
-from typing import Dict, Any, Optional
-import streamlit as st
+import sys
+from typing import Dict, Any, Optional, List
 
 from services.memory import (
     add_message,
@@ -44,9 +44,18 @@ from services.vision_service import analyze_image_with_vision, extract_text_ocr
 from services.analytics_service import log_query_metrics
 from utils.settings import get_setting
 from utils.security import sanitize_input
-from utils.errors import safe_execute
 
 logger = logging.getLogger(__name__)
+
+
+def _get_st_state_attr(attr_name: str, default: Any = None) -> Any:
+    try:
+        import streamlit as st
+        if hasattr(st, "session_state"):
+            return st.session_state.get(attr_name, default)
+    except Exception:
+        pass
+    return default
 
 
 # ==========================================================
@@ -55,6 +64,9 @@ logger = logging.getLogger(__name__)
 def process_chat(
     user_prompt: str,
     save_user: bool = True,
+    selected_model: Optional[str] = None,
+    documents_override: Optional[List[Dict[str, Any]]] = None,
+    active_image_override: Optional[Any] = None,
 ) -> Optional[Dict[str, Any]]:
     """
     Processes user query through Nova's complete intelligence pipeline:
@@ -82,9 +94,9 @@ def process_chat(
     # ==========================================================
     # 1. Vision AI Analysis (Active Image attached)
     # ==========================================================
-    active_image = st.session_state.get("active_image")
+    active_image = active_image_override if active_image_override is not None else _get_st_state_attr("active_image", None)
     if active_image is not None:
-        vision_mode = st.session_state.get("vision_mode", "general")
+        vision_mode = _get_st_state_attr("vision_mode", "general")
         logger.info(f"Processing Vision AI prompt with mode '{vision_mode}'...")
 
         if vision_mode == "ocr":
@@ -307,7 +319,7 @@ def process_chat(
     # ==========================================================
     # 5. Advanced Multi-Document RAG (FAISS + BM25 + RRF + Re-ranking)
     # ==========================================================
-    documents = st.session_state.get("documents", [])
+    documents = documents_override if documents_override is not None else _get_st_state_attr("documents", [])
     if documents:
         try:
             rag_top_k = get_setting("rag_top_k", 4)
@@ -353,6 +365,7 @@ def process_chat(
         document_context=document_context,
         web_context=web_context,
         url_context=url_context,
+        selected_model=selected_model,
     )
 
     # Save assistant response to memory
@@ -360,13 +373,13 @@ def process_chat(
 
     elapsed = round(time.perf_counter() - start_time, 2)
     feature_tag = "Advanced RAG" if document_context else ("Web Search" if web_context else "General Gemini")
-    log_query_metrics(clean_prompt, elapsed, feature_tag, "Gemini 2.5 Flash")
+    log_query_metrics(clean_prompt, elapsed, feature_tag, selected_model or "Gemini 2.5 Flash")
 
     return {
         "text": assistant_response,
         "metadata": {
             "response_time": elapsed,
-            "model": "Gemini",
+            "model": selected_model or "Gemini 2.5 Flash",
             "used_pdf": bool(document_context),
             "used_web": bool(web_context),
             "used_url": bool(url_context),
