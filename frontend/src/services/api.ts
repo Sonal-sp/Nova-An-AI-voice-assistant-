@@ -68,6 +68,29 @@ export const fetchIntegrations = async () => {
   return res.data;
 };
 
+export const connectIntegration = async (serviceName: string, authToken = '', config = {}) => {
+  const res = await api.post('/user/integrations/connect', {
+    service_name: serviceName,
+    auth_token: authToken,
+    config,
+  });
+  return res.data;
+};
+
+export const testIntegration = async (serviceName: string, authToken = '', config = {}) => {
+  const res = await api.post('/user/integrations/test', {
+    service_name: serviceName,
+    auth_token: authToken,
+    config,
+  });
+  return res.data;
+};
+
+export const disconnectIntegration = async (serviceName: string) => {
+  const res = await api.delete(`/user/integrations/${serviceName}`);
+  return res.data;
+};
+
 export const launchDesktopApp = async (appName: string) => {
   const res = await api.post('/launch-app', { app_name: appName });
   return res.data;

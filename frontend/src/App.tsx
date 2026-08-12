@@ -7,6 +7,7 @@ import { VisionView } from './components/VisionView';
 import { ProductivityView } from './components/ProductivityView';
 import { IntegrationsView } from './components/IntegrationsView';
 import { SettingsView } from './components/SettingsView';
+import { DiagnosticsView } from './components/DiagnosticsView';
 import { CommandPalette } from './components/CommandPalette';
 import { wakeWordEngine } from './services/wakeWord';
 import { fetchHealth, fetchModels } from './services/api';
@@ -96,14 +97,7 @@ export const App: React.FC = () => {
 
           {activeTab === 'integrations' && <IntegrationsView />}
 
-          {activeTab === 'diagnostics' && (
-            <div className="glass-panel p-6">
-              <h2 className="text-xl font-bold nova-gradient-text mb-4">📊 System Benchmark Diagnostics</h2>
-              <pre className="text-xs text-sky-300 font-mono bg-slate-950 p-4 rounded-xl overflow-x-auto">
-                {JSON.stringify(health, null, 2)}
-              </pre>
-            </div>
-          )}
+          {activeTab === 'diagnostics' && <DiagnosticsView />}
 
           {activeTab === 'settings' && <SettingsView />}
         </main>

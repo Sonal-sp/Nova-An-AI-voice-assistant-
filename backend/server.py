@@ -34,6 +34,12 @@ from services.integrations_service import (
     github_search_repos, slack_send_message, discord_send_message,
     gmail_search_unread, gdrive_search_files, gcalendar_list_events, notion_search_pages
 )
+from services.account_service import (
+    get_all_user_integrations,
+    connect_user_integration,
+    disconnect_user_integration,
+    test_integration_connection,
+)
 from utils.settings import load_settings, save_settings
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -85,6 +91,12 @@ class SettingsRequest(BaseModel):
 class WebhookMessageRequest(BaseModel):
     webhook_url: str
     text: str
+
+
+class ConnectIntegrationRequest(BaseModel):
+    service_name: str
+    auth_token: Optional[str] = ""
+    config: Optional[Dict[str, Any]] = None
 
 
 @app.get("/api/health")
@@ -253,16 +265,32 @@ def get_agenda():
     return get_daily_planner_summary()
 
 
-# Cloud Integrations Routes
+# Cloud Integrations & User Accounts Routes
 @app.get("/api/integrations")
 def get_integrations():
     return {
+        "user_integrations": get_all_user_integrations(),
         "github_repos": github_search_repos("nova-assistant"),
         "unread_gmail": gmail_search_unread(),
         "drive_files": gdrive_search_files("nova"),
         "calendar_events": gcalendar_list_events(),
         "notion_pages": notion_search_pages("nova"),
     }
+
+
+@app.post("/api/user/integrations/connect")
+def connect_user_integration_route(req: ConnectIntegrationRequest):
+    return connect_user_integration(req.service_name, req.auth_token, req.config)
+
+
+@app.post("/api/user/integrations/test")
+def test_user_integration_route(req: ConnectIntegrationRequest):
+    return test_integration_connection(req.service_name, req.auth_token, req.config)
+
+
+@app.delete("/api/user/integrations/{service_name}")
+def disconnect_user_integration_route(service_name: str):
+    return disconnect_user_integration(service_name)
 
 
 @app.post("/api/integrations/slack")
